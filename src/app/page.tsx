@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
-import { Plus, LogIn, BookOpen, Menu, Sun, Moon, Sparkles, Youtube, BookOpenCheck, Users } from 'lucide-react';
-import CategoryList from '../components/CategoryList';
-import AddCategoryDialog from '../components/AddCategoryDialog';
-import AuthDialog from '../components/AuthDialog';
-import FlashcardView from '../components/FlashcardView';
-import ActivityGraph from '../components/ActivityGraph';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import React, { useState } from "react";
+import {
+  Plus,
+  LogIn,
+  BookOpen,
+  Menu,
+  Sun,
+  Moon,
+  Sparkles,
+  Youtube,
+  BookOpenCheck,
+  Users,
+} from "lucide-react";
+import CategoryList from "../components/CategoryList";
+import AddCategoryDialog from "../components/AddCategoryDialog";
+import AuthDialog from "../components/AuthDialog";
+import FlashcardView from "../components/FlashcardView";
+import ActivityGraph from "../components/ActivityGraph";
+import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function Home() {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -18,7 +29,7 @@ export default function Home() {
   const [key, setKey] = useState(0);
 
   const handleCategoryAdded = () => {
-    setKey(prev => prev + 1);
+    setKey((prev) => prev + 1);
   };
 
   const handleTitleClick = () => {
@@ -33,18 +44,21 @@ export default function Home() {
     {
       icon: <Youtube className="w-12 h-12 text-red-500" />,
       title: "YouTubeで英語学習",
-      description: "お気に入りのYouTube動画で楽しく英語を学習。字幕を使って効果的に学べます。"
+      description:
+        "お気に入りのYouTube動画で楽しく英語を学習。字幕を使って効果的に学べます。",
     },
     {
       icon: <BookOpenCheck className="w-12 h-12 text-green-500" />,
       title: "単語の管理と復習",
-      description: "動画から学んだ単語を保存し、効率的に復習。スペース反復システムで記憶を定着。"
+      description:
+        "動画から学んだ単語を保存し、効率的に復習。スペース反復システムで記憶を定着。",
     },
     {
       icon: <Users className="w-12 h-12 text-blue-500" />,
       title: "カテゴリ管理",
-      description: "チャンネルをカテゴリごとに整理して、効率的に学習を進められます。"
-    }
+      description:
+        "チャンネルをカテゴリごとに整理して、効率的に学習を進められます。",
+    },
   ];
 
   if (!user) {
@@ -62,9 +76,13 @@ export default function Home() {
               <button
                 onClick={toggleTheme}
                 className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                title={theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
+                title={
+                  theme === "dark"
+                    ? "ライトモードに切り替え"
+                    : "ダークモードに切り替え"
+                }
               >
-                {theme === 'dark' ? (
+                {theme === "dark" ? (
                   <Sun className="w-5 h-5" />
                 ) : (
                   <Moon className="w-5 h-5" />
@@ -85,7 +103,8 @@ export default function Home() {
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
               YouTubeで楽しく
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-                {" "}英語学習
+                {" "}
+                英語学習
               </span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
@@ -139,10 +158,7 @@ export default function Home() {
           </div>
         </div>
 
-        <AuthDialog
-          open={isAuthOpen}
-          onOpenChange={setIsAuthOpen}
-        />
+        <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
       </div>
     );
   }
@@ -158,20 +174,24 @@ export default function Home() {
             <Sparkles className="w-8 h-8" />
             English Learning Hub
           </button>
-          
+
           <div className="flex items-center gap-4">
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-              title={theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
+              title={
+                theme === "dark"
+                  ? "ライトモードに切り替え"
+                  : "ダークモードに切り替え"
+              }
             >
-              {theme === 'dark' ? (
+              {theme === "dark" ? (
                 <Sun className="w-5 h-5" />
               ) : (
                 <Moon className="w-5 h-5" />
               )}
             </button>
-            
+
             <button
               onClick={handleMenuToggle}
               className="sm:hidden p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
@@ -180,16 +200,18 @@ export default function Home() {
             </button>
           </div>
 
-          <div className={`
+          <div
+            className={`
             flex flex-col sm:flex-row gap-3 w-full sm:w-auto
-            ${isMenuOpen ? 'block' : 'hidden'} sm:flex
-          `}>
+            ${isMenuOpen ? "block" : "hidden"} sm:flex
+          `}
+          >
             <button
               onClick={() => setShowFlashcards(!showFlashcards)}
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:translate-y-[-1px] transition-all duration-300 w-full sm:w-auto"
             >
               <BookOpen className="w-5 h-5" />
-              {showFlashcards ? '学習を終了' : '単語を復習'}
+              {showFlashcards ? "学習を終了" : "単語を復習"}
             </button>
             <button
               onClick={() => setIsAddCategoryOpen(true)}
@@ -226,10 +248,7 @@ export default function Home() {
           onOpenChange={setIsAddCategoryOpen}
           onCategoryAdded={handleCategoryAdded}
         />
-        <AuthDialog
-          open={isAuthOpen}
-          onOpenChange={setIsAuthOpen}
-        />
+        <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
       </div>
     </div>
   );
