@@ -147,7 +147,7 @@ export default function VideoList({ channelId }: VideoListProps) {
         </>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+      {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">他の動画</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {videos.map((video) => (
@@ -183,7 +183,7 @@ export default function VideoList({ channelId }: VideoListProps) {
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
