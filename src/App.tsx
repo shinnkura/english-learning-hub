@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./app/page";
 import ResetPasswordPage from "./components/ResetPasswordPage";
+import LegalPage from "./app/legal/page";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
@@ -18,17 +20,20 @@ function App() {
     }
   }, []);
 
-  // パスをチェックしてパスワードリセットページを表示
-  const isResetPasswordPage = window.location.pathname === "/reset-password";
-
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-          {isResetPasswordPage ? <ResetPasswordPage /> : <Home />}
-        </div>
-      </AuthProvider>
-    </ThemeProvider>
+    <Router>
+      <ThemeProvider>
+        <AuthProvider>
+          <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+            <Routes>
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/legal" element={<LegalPage />} />
+              <Route path="/" element={<Home />} />
+            </Routes>
+          </div>
+        </AuthProvider>
+      </ThemeProvider>
+    </Router>
   );
 }
 
