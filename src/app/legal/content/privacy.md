@@ -65,7 +65,7 @@ English Learning Hub（以下「本サービス」）は、ユーザーのプラ
 
 プライバシーポリシーに関するお問い合わせは、以下のメールアドレスまでご連絡ください：
 
-support@english-learning-hub.com
+sapotoapuri@gmail.com
 
 ## 10. プライバシーポリシーの更新
 
