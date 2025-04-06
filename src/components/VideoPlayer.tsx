@@ -11,6 +11,7 @@ import {
   Clock,
 } from "lucide-react";
 import SaveWordDialog from "./SaveWordDialog";
+import CaptionModal from "./CaptionModal";
 
 interface VideoPlayerProps {
   videoId: string;
@@ -42,6 +43,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
   const [retryCount, setRetryCount] = useState(0);
   const [retryDelay, setRetryDelay] = useState(INITIAL_RETRY_DELAY);
   const [showVideo, setShowVideo] = useState(false);
+  const [isCaptionModalOpen, setIsCaptionModalOpen] = useState(true);
   const [selectedText, setSelectedText] = useState("");
   const [isSaveWordOpen, setIsSaveWordOpen] = useState(false);
   const [selectedCaption, setSelectedCaption] = useState<Caption | null>(null);
@@ -491,14 +493,6 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
   if (!showVideo) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              字幕プレビュー
-            </h2>
-          </div>
-        </div>
         <div className="aspect-video w-full bg-black rounded-lg overflow-hidden mb-6">
           <YouTube
             videoId={videoId}
@@ -509,32 +503,20 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
             iframeClassName="w-full h-full"
           />
         </div>
-        <div className="prose max-w-none relative" ref={previewRef}>
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-            {captions.map((caption, index) => (
-              <div
-                key={index}
-                className="text-lg leading-relaxed p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                {caption.text}
-              </div>
-            ))}
-          </div>
-          {saveButtonPosition && (
-            <button
-              onClick={handleSaveButtonClick}
-              style={{
-                position: "absolute",
-                top: `${saveButtonPosition.top}px`,
-                left: `${saveButtonPosition.left}px`,
-              }}
-              className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
-            >
-              <Plus className="w-4 h-4" />
-              保存
-            </button>
-          )}
-        </div>
+        <button
+          onClick={() => setIsCaptionModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <BookOpen className="w-6 h-6" />
+          字幕を表示
+        </button>
+        <CaptionModal
+          isOpen={isCaptionModalOpen}
+          onClose={() => setIsCaptionModalOpen(false)}
+          captions={captions}
+          onCaptionClick={handleCaptionClick}
+          currentTime={currentTime}
+        />
         {selectedCaption && (
           <SaveWordDialog
             open={isSaveWordOpen}
@@ -560,44 +542,20 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
           iframeClassName="w-full h-full"
         />
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-          字幕
-        </h3>
-        <div className="space-y-3 max-h-[40vh] overflow-y-auto px-2">
-          {captions.map((caption, index) => (
-            <div
-              key={index}
-              className={`p-4 rounded-lg transition-all duration-300 ${
-                getCurrentCaption()?.start === caption.start
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 shadow-md"
-                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              <div
-                className="prose max-w-none cursor-pointer text-gray-900 dark:text-gray-100 text-base sm:text-lg leading-relaxed"
-                onClick={() => handleCaptionClick(caption)}
-              >
-                {caption.text}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      {saveButtonPosition && showVideo && (
-        <button
-          onClick={handleSaveButtonClick}
-          style={{
-            position: "absolute",
-            top: `${saveButtonPosition.top}px`,
-            left: `${saveButtonPosition.left}px`,
-          }}
-          className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
-        >
-          <Plus className="w-4 h-4" />
-          保存
-        </button>
-      )}
+      <button
+        onClick={() => setIsCaptionModalOpen(true)}
+        className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        <BookOpen className="w-6 h-6" />
+        字幕を表示
+      </button>
+      <CaptionModal
+        isOpen={isCaptionModalOpen}
+        onClose={() => setIsCaptionModalOpen(false)}
+        captions={captions}
+        onCaptionClick={handleCaptionClick}
+        currentTime={currentTime}
+      />
       {selectedCaption && (
         <SaveWordDialog
           open={isSaveWordOpen}
