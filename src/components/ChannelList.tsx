@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Channel } from "../types/youtube";
-import { Trash2, Youtube } from "lucide-react";
+import { Trash2, GraduationCap } from "lucide-react";
 import VideoList from "./VideoList";
 
 interface ChannelListProps {
@@ -115,7 +115,7 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
             onClick={() => setSelectedChannel(channel)}
             className="flex items-center gap-2 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
-            <Youtube className="w-5 h-5 text-red-600 dark:text-red-500" />
+            <GraduationCap className="w-5 h-5 text-red-600 dark:text-red-500" />
             <span>{channel.channel_name}</span>
           </button>
           <button

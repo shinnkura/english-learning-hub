@@ -4,7 +4,6 @@ import { Caption } from "../types/youtube";
 import {
   BookOpen,
   Play,
-  Plus,
   AlertTriangle,
   RefreshCw,
   Loader2,
@@ -107,9 +106,6 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
       console.warn("Failed to clear captions cache:", err);
     }
   };
-
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
 
   const fetchCaptions = async (retry = false) => {
     try {
@@ -296,12 +292,6 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const getCurrentCaption = () => {
-    return captions.find(
-      (caption) => currentTime >= caption.start && currentTime <= caption.end
-    );
-  };
-
   const handleCaptionClick = (caption: Caption) => {
     if (playerRef.current) {
       playerRef.current.seekTo(caption.start);
@@ -346,11 +336,6 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     return () =>
       document.removeEventListener("selectionchange", handleSelectionChange);
   }, [captions, showVideo]);
-
-  const handleSaveButtonClick = () => {
-    setIsSaveWordOpen(true);
-    setSaveButtonPosition(null);
-  };
 
   const handleRetry = () => {
     setRetryCount(0);

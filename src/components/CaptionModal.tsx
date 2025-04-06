@@ -3,8 +3,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Caption } from "@/types/youtube";
+} from "../components/ui/Dialog";
+import { Caption } from "../types/youtube";
 import { BookOpen } from "lucide-react";
 
 interface CaptionModalProps {
