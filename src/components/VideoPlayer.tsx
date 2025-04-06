@@ -1,7 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import YouTube from "react-youtube";
 import { Caption } from "../types/youtube";
-import { BookOpen, Play, Plus, AlertTriangle, RefreshCw, Loader2, Clock } from "lucide-react";
+import {
+  BookOpen,
+  Play,
+  Plus,
+  AlertTriangle,
+  RefreshCw,
+  Loader2,
+  Clock,
+} from "lucide-react";
 import SaveWordDialog from "./SaveWordDialog";
 
 interface VideoPlayerProps {
@@ -37,11 +45,17 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
   const [selectedText, setSelectedText] = useState("");
   const [isSaveWordOpen, setIsSaveWordOpen] = useState(false);
   const [selectedCaption, setSelectedCaption] = useState<Caption | null>(null);
-  const [saveButtonPosition, setSaveButtonPosition] = useState<{ top: number; left: number } | null>(null);
+  const [saveButtonPosition, setSaveButtonPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const [isCircuitOpenClient, setIsCircuitOpenClient] = useState(false);
   const [retryAfterClient, setRetryAfterClient] = useState<number | null>(null);
-  const [circuitResetTimer, setCircuitResetTimer] = useState<NodeJS.Timeout | null>(null);
-  const [retryTimeoutId, setRetryTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [circuitResetTimer, setCircuitResetTimer] =
+    useState<NodeJS.Timeout | null>(null);
+  const [retryTimeoutId, setRetryTimeoutId] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const playerRef = useRef<any>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
@@ -92,7 +106,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     }
   };
 
-  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   const fetchCaptions = async (retry = false) => {
     try {
@@ -109,7 +124,9 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
 
       // Check if circuit breaker is open
       if (isCircuitOpenClient) {
-        throw new Error(`APIリクエスト制限に達しました。${retryAfterClient}秒後に再試行してください。`);
+        throw new Error(
+          `APIリクエスト制限に達しました。${retryAfterClient}秒後に再試行してください。`
+        );
       }
 
       // Check cache first
@@ -137,7 +154,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
 
         if (response.status === 429) {
           const data = await response.json().catch(() => ({
-            error: "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
+            error:
+              "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
             retryAfter: 1800,
           }));
 
@@ -165,12 +183,18 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
           setCircuitResetTimer(timer);
           clearCaptionsCache(videoId);
 
-          throw new Error(`APIリクエスト制限に達しました。${retryAfter}秒後に再試行してください。`);
+          throw new Error(
+            `APIリクエスト制限に達しました。${retryAfter}秒後に再試行してください。`
+          );
         }
 
         if (!response.ok) {
-          const data = await response.json().catch(() => ({ error: "この動画の字幕を取得できませんでした。" }));
-          throw new Error(data.error || "この動画の字幕を取得できませんでした。");
+          const data = await response
+            .json()
+            .catch(() => ({ error: "この動画の字幕を取得できませんでした。" }));
+          throw new Error(
+            data.error || "この動画の字幕を取得できませんでした。"
+          );
         }
 
         const data = await response.json();
@@ -195,7 +219,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     } catch (err) {
       console.error("Error fetching captions:", err);
 
-      const errorMessage = err instanceof Error ? err.message : "字幕の取得に失敗しました。";
+      const errorMessage =
+        err instanceof Error ? err.message : "字幕の取得に失敗しました。";
       setError(errorMessage);
 
       // Only attempt retries if not rate limited
@@ -270,7 +295,9 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
   }, []);
 
   const getCurrentCaption = () => {
-    return captions.find((caption) => currentTime >= caption.start && currentTime <= caption.end);
+    return captions.find(
+      (caption) => currentTime >= caption.start && currentTime <= caption.end
+    );
   };
 
   const handleCaptionClick = (caption: Caption) => {
@@ -314,7 +341,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     };
 
     document.addEventListener("selectionchange", handleSelectionChange);
-    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+    return () =>
+      document.removeEventListener("selectionchange", handleSelectionChange);
   }, [captions, showVideo]);
 
   const handleSaveButtonClick = () => {
@@ -338,7 +366,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
       width: "100%",
       height: "100%",
       playerVars: {
-        autoplay: 1,
+        autoplay: 0,
         modestbranding: 1,
         rel: 0,
         cc_load_policy: 1,
@@ -353,7 +381,9 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
-        <p className="ml-2 text-gray-600 dark:text-gray-400">字幕を読み込み中...</p>
+        <p className="ml-2 text-gray-600 dark:text-gray-400">
+          字幕を読み込み中...
+        </p>
       </div>
     );
   }
@@ -369,7 +399,10 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
           {retryAfterClient && (
             <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400">
               <Clock className="w-5 h-5" />
-              <p>{formatTimeRemaining(retryAfterClient)}後に字幕の取得を再試行します</p>
+              <p>
+                {formatTimeRemaining(retryAfterClient)}
+                後に字幕の取得を再試行します
+              </p>
             </div>
           )}
           <button
@@ -458,49 +491,49 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
   if (!showVideo) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">字幕プレビュー</h2>
-            </div>
-            <button
-              onClick={() => {
-                setShowVideo(true);
-                setCaptions([]); // 字幕をクリア
-              }}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 text-white px-8 py-4 sm:py-3 rounded-full shadow-lg hover:shadow-xl hover:translate-y-[-1px] transition-all duration-300 text-lg sm:text-base"
-            >
-              <Play className="w-6 h-6 sm:w-5 sm:h-5" />
-              動画を再生
-            </button>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              字幕プレビュー
+            </h2>
           </div>
-          <div className="prose max-w-none relative" ref={previewRef}>
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-              {captions.map((caption, index) => (
-                <div
-                  key={index}
-                  className="text-lg leading-relaxed p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  {caption.text}
-                </div>
-              ))}
-            </div>
-            {saveButtonPosition && (
-              <button
-                onClick={handleSaveButtonClick}
-                style={{
-                  position: "absolute",
-                  top: `${saveButtonPosition.top}px`,
-                  left: `${saveButtonPosition.left}px`,
-                }}
-                className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
+        </div>
+        <div className="aspect-video w-full bg-black rounded-lg overflow-hidden mb-6">
+          <YouTube
+            videoId={videoId}
+            opts={getYouTubePlayerOpts() as any}
+            onReady={handlePlayerReady}
+            onStateChange={handlePlayerStateChange}
+            className="w-full h-full"
+            iframeClassName="w-full h-full"
+          />
+        </div>
+        <div className="prose max-w-none relative" ref={previewRef}>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {captions.map((caption, index) => (
+              <div
+                key={index}
+                className="text-lg leading-relaxed p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                保存
-              </button>
-            )}
+                {caption.text}
+              </div>
+            ))}
           </div>
+          {saveButtonPosition && (
+            <button
+              onClick={handleSaveButtonClick}
+              style={{
+                position: "absolute",
+                top: `${saveButtonPosition.top}px`,
+                left: `${saveButtonPosition.left}px`,
+              }}
+              className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              保存
+            </button>
+          )}
         </div>
         {selectedCaption && (
           <SaveWordDialog
@@ -528,7 +561,9 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
         />
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">字幕</h3>
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+          字幕
+        </h3>
         <div className="space-y-3 max-h-[40vh] overflow-y-auto px-2">
           {captions.map((caption, index) => (
             <div
