@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog';
-import { supabase } from '../lib/supabase';
+import React, { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
+import { supabase } from "../lib/supabase";
 
 interface AddCategoryDialogProps {
   open: boolean;
@@ -8,8 +8,12 @@ interface AddCategoryDialogProps {
   onCategoryAdded: () => void;
 }
 
-export default function AddCategoryDialog({ open, onOpenChange, onCategoryAdded }: AddCategoryDialogProps) {
-  const [categoryName, setCategoryName] = useState('');
+export default function AddCategoryDialog({
+  open,
+  onOpenChange,
+  onCategoryAdded,
+}: AddCategoryDialogProps) {
+  const [categoryName, setCategoryName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -17,33 +21,35 @@ export default function AddCategoryDialog({ open, onOpenChange, onCategoryAdded 
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-    
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        setError('ユーザーが認証されていません');
+        setError("ユーザーが認証されていません");
         return;
       }
 
-      const { error: insertError } = await supabase
-        .from('categories')
-        .insert([{ 
+      const { error: insertError } = await supabase.from("categories").insert([
+        {
           name: categoryName,
-          user_id: user.id
-        }]);
+          user_id: user.id,
+        },
+      ]);
 
       if (insertError) {
-        console.error('Error creating category:', insertError);
-        setError('カテゴリの作成に失敗しました');
+        console.error("Error creating category:", insertError);
+        setError("カテゴリの作成に失敗しました");
         return;
       }
 
-      setCategoryName('');
+      setCategoryName("");
       onCategoryAdded();
       onOpenChange(false);
     } catch (err) {
-      console.error('Error:', err);
-      setError('予期せぬエラーが発生しました');
+      console.error("Error:", err);
+      setError("予期せぬエラーが発生しました");
     } finally {
       setIsSubmitting(false);
     }
@@ -57,12 +63,13 @@ export default function AddCategoryDialog({ open, onOpenChange, onCategoryAdded 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 rounded-md bg-red-50 text-red-800">
-              {error}
-            </div>
+            <div className="p-3 rounded-md bg-red-50 text-red-800">{error}</div>
           )}
           <div>
-            <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="categoryName"
+              className="block text-sm font-medium text-gray-700"
+            >
               カテゴリ名
             </label>
             <input
@@ -80,7 +87,7 @@ export default function AddCategoryDialog({ open, onOpenChange, onCategoryAdded 
               disabled={isSubmitting}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? '追加中...' : '追加'}
+              {isSubmitting ? "追加中..." : "追加"}
             </button>
           </div>
         </form>

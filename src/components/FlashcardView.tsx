@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { SavedWord } from '../types/youtube';
-import { Rotate3D, Check, X, ExternalLink, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+import { SavedWord } from "../types/youtube";
+import { Rotate3D, Check, X, ExternalLink, ArrowLeft } from "lucide-react";
 
 interface FlashcardViewProps {
   onClose: () => void;
@@ -19,31 +19,33 @@ export default function FlashcardView({ onClose }: FlashcardViewProps) {
       setIsLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
-        throw new Error('ユーザーが認証されていません');
+        throw new Error("ユーザーが認証されていません");
       }
 
       // 復習が必要な単語を取得
       const { data: wordsToReview, error: fetchError } = await supabase
-        .from('saved_words')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('remembered', false)
-        .order('next_review_date', { ascending: true });
+        .from("saved_words")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("remembered", false)
+        .order("next_review_date", { ascending: true });
 
       if (fetchError) {
-        throw new Error('単語の取得に失敗しました');
+        throw new Error("単語の取得に失敗しました");
       }
 
       setWords(wordsToReview || []);
     } catch (err) {
-      console.error('Error in fetchWords:', err);
+      console.error("Error in fetchWords:", err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('予期せぬエラーが発生しました');
+        setError("予期せぬエラーが発生しました");
       }
     } finally {
       setIsLoading(false);
@@ -66,20 +68,20 @@ export default function FlashcardView({ onClose }: FlashcardViewProps) {
       }
 
       const { error: updateError } = await supabase
-        .from('saved_words')
+        .from("saved_words")
         .update({
           remembered,
-          next_review_date: nextReviewDate.toISOString()
+          next_review_date: nextReviewDate.toISOString(),
         })
-        .eq('id', words[currentIndex].id);
+        .eq("id", words[currentIndex].id);
 
       if (updateError) {
-        throw new Error('更新に失敗しました');
+        throw new Error("更新に失敗しました");
       }
 
       // 次の単語へ
       if (currentIndex < words.length - 1) {
-        setCurrentIndex(prev => prev + 1);
+        setCurrentIndex((prev) => prev + 1);
         setIsFlipped(false);
       } else {
         // すべての単語を確認した場合は再読み込み
@@ -91,7 +93,7 @@ export default function FlashcardView({ onClose }: FlashcardViewProps) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('予期せぬエラーが発生しました');
+        setError("予期せぬエラーが発生しました");
       }
     }
   };
@@ -130,20 +132,24 @@ export default function FlashcardView({ onClose }: FlashcardViewProps) {
               {currentIndex + 1} / {words.length}
             </p>
           </div>
-          
+
           <div className="relative min-h-[300px] perspective-1000">
             <div
               className={`w-full bg-white rounded-xl shadow-lg transition-transform duration-500 transform-style-3d cursor-pointer ${
-                isFlipped ? 'rotate-y-180' : ''
+                isFlipped ? "rotate-y-180" : ""
               }`}
               onClick={() => setIsFlipped(!isFlipped)}
             >
               {/* 表面 */}
-              <div className={`p-8 absolute w-full h-full backface-hidden ${
-                isFlipped ? 'invisible' : ''
-              }`}>
+              <div
+                className={`p-8 absolute w-full h-full backface-hidden ${
+                  isFlipped ? "invisible" : ""
+                }`}
+              >
                 <div className="flex justify-center items-center h-full">
-                  <h2 className="text-3xl font-bold text-gray-900">{words[currentIndex].word}</h2>
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    {words[currentIndex].word}
+                  </h2>
                 </div>
                 <div className="absolute bottom-4 right-4">
                   <Rotate3D className="w-6 h-6 text-gray-400" />
@@ -151,17 +157,27 @@ export default function FlashcardView({ onClose }: FlashcardViewProps) {
               </div>
 
               {/* 裏面 */}
-              <div className={`p-8 absolute w-full h-full backface-hidden rotate-y-180 ${
-                !isFlipped ? 'invisible' : ''
-              }`}>
+              <div
+                className={`p-8 absolute w-full h-full backface-hidden rotate-y-180 ${
+                  !isFlipped ? "invisible" : ""
+                }`}
+              >
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-700">意味</h3>
-                    <p className="text-gray-900">{words[currentIndex].meaning}</p>
+                    <h3 className="text-lg font-semibold text-gray-700">
+                      意味
+                    </h3>
+                    <p className="text-gray-900">
+                      {words[currentIndex].meaning}
+                    </p>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-700">コンテキスト</h3>
-                    <p className="text-gray-900">{words[currentIndex].context}</p>
+                    <h3 className="text-lg font-semibold text-gray-700">
+                      コンテキスト
+                    </h3>
+                    <p className="text-gray-900">
+                      {words[currentIndex].context}
+                    </p>
                   </div>
                   <div>
                     <a

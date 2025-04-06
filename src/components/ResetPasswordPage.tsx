@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { Lock, Loader2, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+import { Lock, Loader2, ArrowRight } from "lucide-react";
 
 export default function ResetPasswordPage() {
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -12,29 +12,29 @@ export default function ResetPasswordPage() {
     const setupSession = async () => {
       try {
         // URLからハッシュパラメータを取得
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        const type = hashParams.get('type');
+        const hashParams = new URLSearchParams(
+          window.location.hash.substring(1)
+        );
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
 
         if (!accessToken || !refreshToken) {
-          throw new Error('無効なURLです');
+          throw new Error("無効なURLです");
         }
 
         // セッションを設定
         const { error } = await supabase.auth.setSession({
           access_token: accessToken,
-          refresh_token: refreshToken
+          refresh_token: refreshToken,
         });
 
         if (error) throw error;
-
       } catch (err) {
-        console.error('Error setting up session:', err);
+        console.error("Error setting up session:", err);
         if (err instanceof Error) {
           setError(err.message);
         } else {
-          setError('セッションの設定に失敗しました');
+          setError("セッションの設定に失敗しました");
         }
       }
     };
@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
 
     try {
       const { error: updateError } = await supabase.auth.updateUser({
-        password: password
+        password: password,
       });
 
       if (updateError) throw updateError;
@@ -57,15 +57,15 @@ export default function ResetPasswordPage() {
       setSuccess(true);
       // 3秒後にホームページにリダイレクト
       setTimeout(() => {
-        window.location.href = '/';
+        window.location.href = "/";
       }, 3000);
     } catch (err) {
-      console.error('Error resetting password:', err);
+      console.error("Error resetting password:", err);
       if (err instanceof Error) {
-        if (err.message.includes('Password should be')) {
-          setError('パスワードは8文字以上である必要があります');
+        if (err.message.includes("Password should be")) {
+          setError("パスワードは8文字以上である必要があります");
         } else {
-          setError('パスワードの更新に失敗しました。もう一度お試しください。');
+          setError("パスワードの更新に失敗しました。もう一度お試しください。");
         }
       }
     } finally {

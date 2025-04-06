@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Plus,
   LogIn,
@@ -46,17 +46,20 @@ export default function Home() {
     {
       icon: <Youtube className="w-12 h-12 text-red-500" />,
       title: "YouTubeで英語学習",
-      description: "お気に入りのYouTube動画で楽しく英語を学習。字幕を使って効果的に学べます。",
+      description:
+        "お気に入りのYouTube動画で楽しく英語を学習。字幕を使って効果的に学べます。",
     },
     {
       icon: <BookOpenCheck className="w-12 h-12 text-green-500" />,
       title: "単語の管理と復習",
-      description: "動画から学んだ単語を保存し、効率的に復習。スペース反復システムで記憶を定着。",
+      description:
+        "動画から学んだ単語を保存し、効率的に復習。スペース反復システムで記憶を定着。",
     },
     {
       icon: <Users className="w-12 h-12 text-blue-500" />,
       title: "カテゴリ管理",
-      description: "チャンネルをカテゴリごとに整理して、効率的に学習を進められます。",
+      description:
+        "チャンネルをカテゴリごとに整理して、効率的に学習を進められます。",
     },
   ];
 
@@ -82,9 +85,17 @@ export default function Home() {
               <button
                 onClick={toggleTheme}
                 className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+                title={
+                  theme === "dark"
+                    ? "ライトモードに切り替え"
+                    : "ダークモードに切り替え"
+                }
               >
-                {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {theme === "dark" ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
               </button>
               <button
                 onClick={() => setIsAuthOpen(true)}
@@ -125,9 +136,15 @@ export default function Home() {
                 className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <div className="flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-full">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-300">{feature.description}</p>
+                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-full">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {feature.description}
+                  </p>
                 </div>
               </div>
             ))}
@@ -135,8 +152,12 @@ export default function Home() {
 
           {/* Call to Action */}
           <div className="text-center bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-3xl font-bold text-white mb-4">今すぐ始めましょう</h2>
-            <p className="text-blue-100 mb-6">無料アカウントを作成して、YouTubeで英語学習を始めましょう。</p>
+            <h2 className="text-3xl font-bold text-white mb-4">
+              今すぐ始めましょう
+            </h2>
+            <p className="text-blue-100 mb-6">
+              無料アカウントを作成して、YouTubeで英語学習を始めましょう。
+            </p>
             <button
               onClick={() => setIsAuthOpen(true)}
               className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:shadow-lg hover:translate-y-[-1px] transition-all duration-300"
@@ -174,9 +195,17 @@ export default function Home() {
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-              title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+              title={
+                theme === "dark"
+                  ? "ライトモードに切り替え"
+                  : "ダークモードに切り替え"
+              }
             >
-              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {theme === "dark" ? (
+                <Sun className="w-5 h-5" />
+              ) : (
+                <Moon className="w-5 h-5" />
+              )}
             </button>
 
             <button
@@ -223,7 +252,11 @@ export default function Home() {
         )}
 
         <div className="transform hover:scale-[1.01] transition-transform duration-300">
-          {showFlashcards ? <FlashcardView onClose={() => setShowFlashcards(false)} /> : <CategoryList key={key} />}
+          {showFlashcards ? (
+            <FlashcardView onClose={() => setShowFlashcards(false)} />
+          ) : (
+            <CategoryList key={key} />
+          )}
         </div>
 
         <AddCategoryDialog

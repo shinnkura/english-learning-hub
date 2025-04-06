@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Channel } from '../types/youtube';
-import { Trash2, Youtube } from 'lucide-react';
-import VideoList from './VideoList';
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+import type { Channel } from "../types/youtube";
+import { Trash2, Youtube } from "lucide-react";
+import VideoList from "./VideoList";
 
 interface ChannelListProps {
   categoryId: string;
@@ -18,23 +18,23 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const { data, error: fetchError } = await supabase
-        .from('channels')
-        .select('*')
-        .eq('category_id', categoryId)
-        .order('created_at', { ascending: false });
+        .from("channels")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: false });
 
       if (fetchError) {
-        console.error('Error fetching channels:', fetchError);
-        setError('チャンネルの取得に失敗しました');
+        console.error("Error fetching channels:", fetchError);
+        setError("チャンネルの取得に失敗しました");
         return;
       }
 
       setChannels(data || []);
     } catch (err) {
-      console.error('Error:', err);
-      setError('予期せぬエラーが発生しました');
+      console.error("Error:", err);
+      setError("予期せぬエラーが発生しました");
     } finally {
       setIsLoading(false);
     }
@@ -47,20 +47,20 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
   const handleDelete = async (id: string) => {
     try {
       const { error: deleteError } = await supabase
-        .from('channels')
+        .from("channels")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (deleteError) {
-        console.error('Error deleting channel:', deleteError);
-        setError('チャンネルの削除に失敗しました');
+        console.error("Error deleting channel:", deleteError);
+        setError("チャンネルの削除に失敗しました");
         return;
       }
 
       await fetchChannels();
     } catch (err) {
-      console.error('Error:', err);
-      setError('予期せぬエラーが発生しました');
+      console.error("Error:", err);
+      setError("予期せぬエラーが発生しました");
     }
   };
 
@@ -83,7 +83,9 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
   if (channels.length === 0) {
     return (
       <div className="text-center py-4">
-        <p className="text-gray-600 dark:text-gray-400">チャンネルがありません</p>
+        <p className="text-gray-600 dark:text-gray-400">
+          チャンネルがありません
+        </p>
       </div>
     );
   }

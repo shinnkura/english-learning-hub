@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog';
-import { supabase } from '../lib/supabase';
+import React, { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
+import { supabase } from "../lib/supabase";
 
 interface SaveWordDialogProps {
   open: boolean;
@@ -15,9 +15,9 @@ export default function SaveWordDialog({
   onOpenChange,
   word,
   context,
-  videoId
+  videoId,
 }: SaveWordDialogProps) {
-  const [meaning, setMeaning] = useState('');
+  const [meaning, setMeaning] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -26,17 +26,18 @@ export default function SaveWordDialog({
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-    
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        throw new Error('ユーザーが認証されていません');
+        throw new Error("ユーザーが認証されていません");
       }
 
       const url = `https://www.youtube.com/watch?v=${videoId}`;
-      const { error: insertError } = await supabase
-        .from('saved_words')
-        .insert([{ 
+      const { error: insertError } = await supabase.from("saved_words").insert([
+        {
           word,
           context,
           video_id: videoId,
@@ -44,17 +45,18 @@ export default function SaveWordDialog({
           user_id: user.id,
           meaning: meaning.trim(),
           next_review_date: new Date().toISOString(),
-          remembered: false
-        }]);
+          remembered: false,
+        },
+      ]);
 
       if (insertError) {
-        console.error('Error saving word:', insertError);
-        throw new Error('単語の保存に失敗しました');
+        console.error("Error saving word:", insertError);
+        throw new Error("単語の保存に失敗しました");
       }
 
       setIsSaved(true);
       setTimeout(() => {
-        setMeaning('');
+        setMeaning("");
         setIsSaved(false);
         onOpenChange(false);
       }, 1500);
@@ -62,7 +64,7 @@ export default function SaveWordDialog({
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('予期せぬエラーが発生しました');
+        setError("予期せぬエラーが発生しました");
       }
     } finally {
       setIsSubmitting(false);
@@ -77,9 +79,7 @@ export default function SaveWordDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 rounded-md bg-red-50 text-red-800">
-              {error}
-            </div>
+            <div className="p-3 rounded-md bg-red-50 text-red-800">{error}</div>
           )}
           {isSaved && (
             <div className="p-3 rounded-md bg-green-50 text-green-800">
@@ -103,7 +103,10 @@ export default function SaveWordDialog({
             </div>
           </div>
           <div>
-            <label htmlFor="meaning" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="meaning"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               意味・メモ
             </label>
             <textarea
@@ -122,7 +125,7 @@ export default function SaveWordDialog({
               disabled={isSubmitting || isSaved}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? '保存中...' : isSaved ? '保存済み' : '保存'}
+              {isSubmitting ? "保存中..." : isSaved ? "保存済み" : "保存"}
             </button>
           </div>
         </form>

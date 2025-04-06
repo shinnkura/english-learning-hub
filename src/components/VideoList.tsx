@@ -72,18 +72,6 @@ export default function VideoList({ channelId }: VideoListProps) {
     fetchVideos();
   }, [channelId]);
 
-  // const handleVideoSelect = (video: Video) => {
-  //   setSelectedVideo(video);
-  // };
-
-  // const formatDate = (date: Date) => {
-  //   return new Intl.DateTimeFormat("ja-JP", {
-  //     year: "numeric",
-  //     month: "long",
-  //     day: "numeric",
-  //   }).format(date);
-  // };
-
   if (isLoading) {
     return (
       <div className="text-center py-4">
@@ -101,7 +89,9 @@ export default function VideoList({ channelId }: VideoListProps) {
           disabled={isRetrying}
           className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
         >
-          <RefreshCw className={`w-5 h-5 ${isRetrying ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`w-5 h-5 ${isRetrying ? "animate-spin" : ""}`}
+          />
           再試行
         </button>
       </div>
@@ -111,7 +101,9 @@ export default function VideoList({ channelId }: VideoListProps) {
   if (videos.length === 0) {
     return (
       <div className="text-center py-4">
-        <p className="text-gray-600 dark:text-gray-400">動画が見つかりませんでした</p>
+        <p className="text-gray-600 dark:text-gray-400">
+          動画が見つかりませんでした
+        </p>
       </div>
     );
   }
@@ -119,65 +111,8 @@ export default function VideoList({ channelId }: VideoListProps) {
   return (
     <div className="space-y-6">
       {selectedVideo && (
-        <>
-          {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-            <div className="flex flex-col sm:flex-row items-start gap-4 p-4">
-              <img
-                src={selectedVideo.thumbnail}
-                alt={selectedVideo.title}
-                className="w-full sm:w-[320px] h-[180px] object-cover rounded-md"
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{selectedVideo.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4" />
-                  {formatDate(selectedVideo.publishedAt)}
-                </p>
-                <p className="text-gray-700 dark:text-gray-300 text-sm">{selectedVideo.description}</p>
-              </div>
-            </div>
-          </div> */}
-          <VideoPlayer key={selectedVideo.id} videoId={selectedVideo.id} />
-        </>
+        <VideoPlayer key={selectedVideo.id} videoId={selectedVideo.id} />
       )}
-
-      {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">他の動画</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {videos.map((video) => (
-            <button
-              key={video.id}
-              onClick={() => handleVideoSelect(video)}
-              className={`text-left rounded-lg overflow-hidden transition-all duration-300 ${
-                selectedVideo?.id === video.id
-                  ? 'ring-2 ring-blue-500 dark:ring-blue-400'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-              }`}
-            >
-              <div className="relative">
-                <img
-                  src={video.thumbnail}
-                  alt={video.title}
-                  className="w-full h-[180px] object-cover"
-                />
-                {selectedVideo?.id === video.id && (
-                  <div className="absolute inset-0 bg-blue-500/10 flex items-center justify-center">
-                    <Play className="w-12 h-12 text-blue-500" />
-                  </div>
-                )}
-              </div>
-              <div className="p-3">
-                <h4 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-1">
-                  {video.title}
-                </h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {formatDate(video.publishedAt)}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div> */}
     </div>
   );
 }
