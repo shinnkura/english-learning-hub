@@ -104,12 +104,25 @@ export default defineConfig(async () => {
         timeout: 120000,
         clientPort: 5173,
       },
+      fs: {
+        // Markdownファイルを含むディレクトリを許可
+        allow: [".."],
+      },
     },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
     },
-    assetsInclude: ["**/*.md"], // Markdownファイルをアセットとして扱う
+    build: {
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, "index.html"),
+        },
+      },
+    },
+    // 静的ファイルの設定
+    publicDir: "public",
+    assetsInclude: ["**/*.md"],
   };
 });
