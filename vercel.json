@@ -1,18 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/legal/content/:path*",
+      "destination": "/legal/content/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
-  "routes": [
-    {
-      "src": "/legal/content/(.*)",
-      "dest": "/legal/content/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  "cleanUrls": true,
+  "trailingSlash": false
 }
