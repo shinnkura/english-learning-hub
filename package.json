@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"tsx watch src/server/index.ts\"",
     "build": "tsc && vite build",
-    "build:server": "tsc src/server/index.ts --outDir dist/server",
+    "build:server": "tsc src/server/index.ts --outDir dist/server --moduleResolution node",
     "start": "node dist/server/index.js",
     "vercel-build": "npm run build && npm run build:server",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
