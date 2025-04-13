@@ -15,7 +15,14 @@ const DEFAULT_PORT = 3001;
 const MAX_PORT_ATTEMPTS = 10;
 
 app.set("trust proxy", true);
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Accept"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // 静的ファイルの提供
