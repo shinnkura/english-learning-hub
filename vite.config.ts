@@ -35,7 +35,11 @@ export default defineConfig(async () => {
   return {
     plugins: [react()],
     optimizeDeps: {
-      include: ["lucide-react", "@supabase/supabase-js", "@supabase/postgrest-js"],
+      include: [
+        "lucide-react",
+        "@supabase/supabase-js",
+        "@supabase/postgrest-js",
+      ],
     },
     server: {
       proxy: {
@@ -44,7 +48,8 @@ export default defineConfig(async () => {
           changeOrigin: true,
           secure: false,
           ws: true,
-          rewrite: (path) => path.replace(/^\/api\/transcript/, "/api/captions"),
+          rewrite: (path) =>
+            path.replace(/^\/api\/transcript/, "/api/captions"),
           timeout: 120000,
           configure: (proxy, _options) => {
             proxy.on("error", (err, _req, res) => {
@@ -66,7 +71,10 @@ export default defineConfig(async () => {
               proxyReq.removeHeader("referer");
 
               // Add necessary headers
-              proxyReq.setHeader("X-Forwarded-For", req.socket.remoteAddress || "");
+              proxyReq.setHeader(
+                "X-Forwarded-For",
+                req.socket.remoteAddress || ""
+              );
               proxyReq.setHeader("X-Forwarded-Proto", "http");
               proxyReq.setHeader("X-Forwarded-Host", req.headers.host || "");
               proxyReq.setHeader("Accept", "application/json");
@@ -88,7 +96,8 @@ export default defineConfig(async () => {
                   } catch (e) {
                     res.end(
                       JSON.stringify({
-                        error: "字幕の取得に失敗しました。もう一度お試しください。",
+                        error:
+                          "字幕の取得に失敗しました。もう一度お試しください。",
                       })
                     );
                   }

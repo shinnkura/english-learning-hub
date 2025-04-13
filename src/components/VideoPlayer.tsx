@@ -137,29 +137,26 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       try {
-        const response = await fetch(`/api/transcript/${videoId}`, {
-          signal: controller.signal,
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await fetch(
+          `https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`,
+          {
+            signal: controller.signal,
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         clearTimeout(timeoutId);
 
         if (response.status === 429) {
-          const data = await response.json().catch(() => ({
-            error:
-              "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
-            retryAfter: 1800,
-          }));
-
           const retryAfter = response.headers.get("Retry-After")
             ? parseInt(response.headers.get("Retry-After") || "1800", 10)
-            : data.retryAfter || 1800;
+            : 1800;
 
           setIsCircuitOpenClient(true);
           setRetryAfterClient(retryAfter);
@@ -187,27 +184,30 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
         }
 
         if (!response.ok) {
-          const data = await response
-            .json()
-            .catch(() => ({ error: "この動画の字幕を取得できませんでした。" }));
-          throw new Error(
-            data.error || "この動画の字幕を取得できませんでした。"
-          );
+          throw new Error("この動画の字幕を取得できませんでした。");
         }
 
-        const data = await response.json();
+        const xmlText = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+        const textElements = xmlDoc.getElementsByTagName("text");
 
-        if (!Array.isArray(data) || data.length === 0) {
+        const captions = Array.from(textElements).map((element) => {
+          const start = parseFloat(element.getAttribute("start") || "0");
+          const duration = parseFloat(element.getAttribute("dur") || "0");
+          return {
+            start,
+            end: start + duration,
+            text: element.textContent || "",
+          };
+        });
+
+        if (captions.length === 0) {
           throw new Error("この動画には英語の字幕がありません。");
         }
 
-        const decodedCaptions = data.map((caption) => ({
-          ...caption,
-          text: decodeHTMLEntities(caption.text),
-        }));
-
-        setCaptions(decodedCaptions);
-        setCachedCaptions(videoId, decodedCaptions);
+        setCaptions(captions);
+        setCachedCaptions(videoId, captions);
         setRetryCount(0);
         setRetryDelay(INITIAL_RETRY_DELAY);
       } catch (err) {
