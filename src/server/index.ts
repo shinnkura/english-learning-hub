@@ -4,7 +4,7 @@ import cors from "cors";
 import Keyv from "keyv";
 import rateLimit from "express-rate-limit";
 import { createServer } from "node:http";
-import axios from "axios";
+import { AxiosProxyConfig } from "axios";
 
 const app = express();
 
@@ -25,21 +25,17 @@ const errorCache = new Keyv({
 });
 
 // プロキシサーバーのリスト（必要に応じて追加）
-const proxyServers = [
+const proxyServers: AxiosProxyConfig[] = [
   // プロキシサーバーのURLを追加
 ];
 
 let currentProxyIndex = 0;
 
-const getNextProxy = () => {
+const getNextProxy = (): AxiosProxyConfig | null => {
   if (proxyServers.length === 0) return null;
   currentProxyIndex = (currentProxyIndex + 1) % proxyServers.length;
   return proxyServers[currentProxyIndex];
 };
-
-let isCircuitOpen = false;
-let circuitResetTimeout: NodeJS.Timeout | null = null;
-const CIRCUIT_RESET_TIME = 30 * 60 * 1000;
 
 cache.on("error", (err) => console.error("Keyv connection error:", err));
 errorCache.on("error", (err) => console.error("Error cache connection error:", err));
@@ -99,17 +95,6 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const openCircuit = () => {
-  isCircuitOpen = true;
-  if (circuitResetTimeout) {
-    clearTimeout(circuitResetTimeout);
-  }
-  circuitResetTimeout = setTimeout(() => {
-    isCircuitOpen = false;
-    circuitResetTimeout = null;
-  }, CIRCUIT_RESET_TIME);
-};
 
 const errorHandler = (err: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error("Error:", err);
