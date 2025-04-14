@@ -73,7 +73,7 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
+  handler: (_req, res) => {
     const retryAfter = Math.ceil(res.getHeader("Retry-After") as number);
     res.status(429).json({
       error: `リクエスト制限に達しました。${retryAfter}秒後に再試行してください。`,
