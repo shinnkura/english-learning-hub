@@ -3,12 +3,8 @@
     "composite": true,
     "skipLibCheck": true,
     "module": "ESNext",
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "outDir": "dist/server",
-    "rootDir": "src/server"
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["src/server/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["vite.config.ts", "src/server/**/*.ts"]
 }

@@ -1,51 +1,82 @@
+/**
+ * YouTube字幕取得サーバー
+ * @module server/index
+ * @description YouTube動画の字幕を取得するためのサーバー
+ * @requires express
+ * @requires youtubei.js
+ * @requires cors
+ * @requires keyv
+ * @requires express-rate-limit
+ * @requires node:http
+ */
+
 import express from "express";
-import { YoutubeTranscript } from "youtube-transcript";
+import { Innertube } from "youtubei.js";
 import cors from "cors";
 import Keyv from "keyv";
 import rateLimit from "express-rate-limit";
 import { createServer } from "node:http";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
-const DEFAULT_PORT = 3001;
-const MAX_PORT_ATTEMPTS = 10;
+
+// Vercel環境でのポート設定
+const PORT = process.env.PORT || 3001;
 
 app.set("trust proxy", true);
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Accept"],
-    credentials: true,
-  })
-);
-app.use(express.json());
 
-// 静的ファイルの提供
-app.use(express.static(path.join(__dirname, "../../dist")));
-
-// すべてのルートでindex.htmlを提供
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(__dirname, "../../dist/index.html"));
+// キャッシュの設定
+const cache = new Keyv({
+  ttl: 24 * 60 * 60 * 1000, // 24時間
+  store: new Map(),
 });
 
-const cache = new Keyv();
-const errorCache = new Keyv();
-let isCircuitOpen = false;
-const CIRCUIT_RESET_TIME = 30 * 60 * 1000; // 30 minutes
+const errorCache = new Keyv({
+  ttl: 5 * 60 * 1000, // 5分
+  store: new Map(),
+});
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const openCircuit = () => {
-  isCircuitOpen = true;
-  setTimeout(() => {
-    isCircuitOpen = false;
-  }, CIRCUIT_RESET_TIME);
+// YouTubeクライアントの初期化
+let youtube: any = null;
+const initYoutube = async () => {
+  if (!youtube) {
+    youtube = await Innertube.create({
+      lang: "en",
+      location: "US",
+      retrieve_player: false,
+    });
+  }
+  return youtube;
 };
+
+cache.on("error", (err) => console.error("Keyv connection error:", err));
+errorCache.on("error", (err) =>
+  console.error("Error cache connection error:", err)
+);
+
+const corsOptions = {
+  origin: "*",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "X-Forwarded-For",
+    "X-Forwarded-Proto",
+    "X-Forwarded-Host",
+  ],
+  credentials: true,
+  exposedHeaders: ["Retry-After"],
+};
+
+app.use(cors(corsOptions));
+app.use(express.json());
+
+app.use((_req, res, next) => {
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Expose-Headers", "Retry-After");
+  next();
+});
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -74,7 +105,7 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
+  handler: (_req, res) => {
     const retryAfter = Math.ceil(res.getHeader("Retry-After") as number);
     res.status(429).json({
       error: `リクエスト制限に達しました。${retryAfter}秒後に再試行してください。`,
@@ -84,10 +115,6 @@ const limiter = rateLimit({
 });
 
 app.use("/api", limiter);
-
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
 
 const errorHandler = (
   err: Error,
@@ -114,157 +141,90 @@ app.get("/api/captions/:videoId", async (req, res) => {
       });
     }
 
-    if (isCircuitOpen) {
-      res.setHeader("Retry-After", Math.ceil(CIRCUIT_RESET_TIME / 1000));
-      return res.status(429).json({
-        error:
-          "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
-        retryAfter: Math.ceil(CIRCUIT_RESET_TIME / 1000),
-      });
-    }
-
-    const cachedError = await errorCache.get(videoId);
-    if (cachedError) {
-      res.setHeader("Retry-After", 1800);
-      return res.status(429).json({
-        error:
-          "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
-        retryAfter: 1800,
-      });
-    }
-
+    // キャッシュの確認
     const cachedCaptions = await cache.get(videoId);
     if (cachedCaptions) {
       return res.json(cachedCaptions);
     }
 
-    await delay(500);
-
-    let retryCount = 0;
-    const maxRetries = 5;
-    const baseDelay = 3000;
-    let consecutiveErrors = 0;
-
-    while (retryCount < maxRetries) {
-      try {
-        const transcripts = await YoutubeTranscript.fetchTranscript(videoId, {
-          lang: "en",
-        });
-
-        if (!transcripts || transcripts.length === 0) {
-          return res.status(404).json({
-            error: "この動画には英語の字幕がありません。",
-          });
-        }
-
-        const captions = transcripts.map((transcript) => ({
-          start: transcript.offset / 1000,
-          end: (transcript.offset + transcript.duration) / 1000,
-          text: transcript.text,
-        }));
-
-        consecutiveErrors = 0;
-        await cache.set(videoId, captions);
-        return res.json(captions);
-      } catch (error: any) {
-        if (error.message?.includes("too many requests")) {
-          consecutiveErrors++;
-
-          if (consecutiveErrors >= 3) {
-            openCircuit();
-            await errorCache.set(videoId, true);
-            res.setHeader("Retry-After", Math.ceil(CIRCUIT_RESET_TIME / 1000));
-            return res.status(429).json({
-              error:
-                "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
-              retryAfter: Math.ceil(CIRCUIT_RESET_TIME / 1000),
-            });
-          }
-
-          retryCount++;
-          if (retryCount < maxRetries) {
-            const jitter = Math.random() * 2000;
-            const delayTime = baseDelay * Math.pow(2, retryCount) + jitter;
-            await delay(delayTime);
-            continue;
-          }
-        }
-        throw error;
-      }
-    }
-
-    await errorCache.set(videoId, true);
-    openCircuit();
-    res.setHeader("Retry-After", Math.ceil(CIRCUIT_RESET_TIME / 1000));
-    throw new Error("APIリクエスト制限に達しました");
-  } catch (error: any) {
-    console.error("Error fetching captions:", error);
-
-    if (error.message?.includes("Transcript is disabled")) {
-      return res.status(404).json({
-        error: "この動画では字幕が無効になっています。",
-      });
-    }
-
-    if (
-      error.message?.includes("too many requests") ||
-      error.message?.includes("APIリクエスト制限")
-    ) {
-      res.setHeader("Retry-After", Math.ceil(CIRCUIT_RESET_TIME / 1000));
+    // エラーキャッシュの確認
+    const cachedError = await errorCache.get(videoId);
+    if (cachedError) {
       return res.status(429).json({
         error:
-          "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
-        retryAfter: Math.ceil(CIRCUIT_RESET_TIME / 1000),
+          "この動画の字幕は一時的に取得できません。しばらく待ってから再試行してください。",
+        retryAfter: 300,
       });
     }
 
-    res.status(500).json({
-      error:
-        "字幕の取得に失敗しました。この動画は英語の字幕が利用できない可能性があります。",
+    try {
+      // YouTubeクライアントの初期化
+      const youtube = await initYoutube();
+
+      // 動画情報の取得
+      const info = await youtube.getInfo(videoId);
+
+      // 字幕の取得
+      const transcriptData = await info.getTranscript();
+
+      if (!transcriptData || !transcriptData.transcript) {
+        throw new Error("Transcript not found");
+      }
+
+      const captions =
+        transcriptData.transcript.content.body.initial_segments.map(
+          (segment: any) => ({
+            start: segment.start_ms / 1000,
+            end: (segment.start_ms + segment.duration_ms) / 1000,
+            text: segment.snippet.text,
+            lang: transcriptData.transcript.language_code,
+          })
+        );
+
+      // キャッシュに保存
+      await cache.set(videoId, captions);
+      return res.json(captions);
+    } catch (error: any) {
+      console.error("Error fetching transcript:", error);
+
+      if (error.message?.includes("Transcript not found")) {
+        await errorCache.set(videoId, true);
+        return res.status(404).json({
+          error: "この動画では字幕が無効になっています。",
+          details:
+            "字幕が無効になっているか、非公開に設定されている可能性があります。",
+          suggestion:
+            "別の動画を試すか、字幕が有効になっている動画を選択してください。",
+        });
+      }
+
+      throw error;
+    }
+  } catch (error: any) {
+    console.error("Error in captions endpoint:", error);
+    return res.status(500).json({
+      error: "字幕の取得に失敗しました。",
+      details:
+        "予期せぬエラーが発生しました。しばらく待ってから再試行してください。",
     });
   }
 });
 
+app.get("/api/health", (_, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.options("*", cors(corsOptions));
+
 app.use(errorHandler);
 
-const startServer = async () => {
+// Vercel環境でのサーバー起動
+if (process.env.NODE_ENV !== "production") {
   const server = createServer(app);
+  server.listen(PORT, () => {
+    console.log(`字幕サーバーがポート${PORT}で起動しました`);
+  });
+}
 
-  for (
-    let port = DEFAULT_PORT;
-    port < DEFAULT_PORT + MAX_PORT_ATTEMPTS;
-    port++
-  ) {
-    try {
-      await new Promise((resolve, reject) => {
-        server.listen(port, "0.0.0.0", () => {
-          console.log(`字幕サーバーがポート${port}で起動しました`);
-          resolve(true);
-        });
-
-        server.on("error", (err: NodeJS.ErrnoException) => {
-          if (err.code === "EADDRINUSE") {
-            server.close();
-            resolve(false);
-          } else {
-            reject(err);
-          }
-        });
-      });
-
-      return port;
-    } catch (err) {
-      console.error(`ポート${port}での起動に失敗しました:`, err);
-      if (port === DEFAULT_PORT + MAX_PORT_ATTEMPTS - 1) {
-        throw err;
-      }
-    }
-  }
-
-  throw new Error("利用可能なポートが見つかりませんでした");
-};
-
-startServer().catch((err) => {
-  console.error("サーバーの起動に失敗しました:", err);
-  process.exit(1);
-});
+// VercelのServerless Functions用にエクスポート
+export default app;

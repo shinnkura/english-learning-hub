@@ -1,14 +1,8 @@
+import React from "react";
 import { useState, useEffect, useRef } from "react";
 import YouTube from "react-youtube";
 import { Caption } from "../types/youtube";
-import {
-  BookOpen,
-  Play,
-  AlertTriangle,
-  RefreshCw,
-  Loader2,
-  Clock,
-} from "lucide-react";
+import { BookOpen, Play, AlertTriangle, RefreshCw, Loader2, Clock } from "lucide-react";
 import SaveWordDialog from "./SaveWordDialog";
 import CaptionModal from "./CaptionModal";
 
@@ -16,7 +10,14 @@ interface VideoPlayerProps {
   videoId: string;
 }
 
-function decodeHTMLEntities(text: string): string {
+/**
+ * HTMLエンティティをデコードする関数
+ * @param {string} text - デコードするテキスト
+ * @returns {string} デコードされたテキスト
+ */
+function decodeHTMLEntities(text: string | undefined): string {
+  if (!text) return "";
+
   const textarea = document.createElement("textarea");
   textarea.innerHTML = text
     .replace(/&amp;/g, "&")
@@ -52,11 +53,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
   } | null>(null);
   const [isCircuitOpenClient, setIsCircuitOpenClient] = useState(false);
   const [retryAfterClient, setRetryAfterClient] = useState<number | null>(null);
-  const [circuitResetTimer, setCircuitResetTimer] =
-    useState<NodeJS.Timeout | null>(null);
-  const [retryTimeoutId, setRetryTimeoutId] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const [circuitResetTimer, setCircuitResetTimer] = useState<NodeJS.Timeout | null>(null);
+  const [retryTimeoutId, setRetryTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const playerRef = useRef<any>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
@@ -122,9 +120,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
 
       // Check if circuit breaker is open
       if (isCircuitOpenClient) {
-        throw new Error(
-          `APIリクエスト制限に達しました。${retryAfterClient}秒後に再試行してください。`
-        );
+        throw new Error(`APIリクエスト制限に達しました。${retryAfterClient}秒後に再試行してください。`);
       }
 
       // Check cache first
@@ -140,7 +136,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       try {
-        const response = await fetch(`/api/transcript/${videoId}`, {
+        const response = await fetch(`/api/captions/${videoId}`, {
           signal: controller.signal,
           headers: {
             Accept: "application/json",
@@ -150,61 +146,40 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
 
         clearTimeout(timeoutId);
 
-        if (response.status === 429) {
-          const data = await response.json().catch(() => ({
-            error:
-              "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
-            retryAfter: 1800,
-          }));
-
-          const retryAfter = response.headers.get("Retry-After")
-            ? parseInt(response.headers.get("Retry-After") || "1800", 10)
-            : data.retryAfter || 1800;
-
-          setIsCircuitOpenClient(true);
-          setRetryAfterClient(retryAfter);
-
-          // Clear any existing circuit reset timer
-          if (circuitResetTimer) {
-            clearTimeout(circuitResetTimer);
-          }
-
-          // Set a timer to reset the circuit breaker
-          const timer = setTimeout(() => {
-            setIsCircuitOpenClient(false);
-            setRetryAfterClient(null);
-            setCircuitResetTimer(null);
-            // Automatically retry when the circuit breaker opens
-            fetchCaptions();
-          }, retryAfter * 1000);
-
-          setCircuitResetTimer(timer);
-          clearCaptionsCache(videoId);
-
-          throw new Error(
-            `APIリクエスト制限に達しました。${retryAfter}秒後に再試行してください。`
-          );
-        }
-
-        if (!response.ok) {
-          const data = await response
-            .json()
-            .catch(() => ({ error: "この動画の字幕を取得できませんでした。" }));
-          throw new Error(
-            data.error || "この動画の字幕を取得できませんでした。"
-          );
-        }
-
         const data = await response.json();
 
-        if (!Array.isArray(data) || data.length === 0) {
+        if (!response.ok) {
+          throw new Error(data.error || "この動画の字幕を取得できませんでした。");
+        }
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
           throw new Error("この動画には英語の字幕がありません。");
         }
 
-        const decodedCaptions = data.map((caption) => ({
-          ...caption,
-          text: decodeHTMLEntities(caption.text),
-        }));
+        // 字幕データの処理を改善
+        const decodedCaptions = data
+          .filter((caption) => caption && caption.text) // nullチェックを追加
+          .map((caption, index, array) => {
+            if (!caption) return null;
+            // endプロパティがnullの場合、次の字幕のstart時間を使用
+            const end =
+              caption.end !== null
+                ? caption.end
+                : index < array.length - 1
+                ? array[index + 1].start
+                : caption.start + 5; // 最後の字幕の場合は5秒後をデフォルト値として設定
+
+            return {
+              ...caption,
+              text: decodeHTMLEntities(caption.text) || "",
+              end: end,
+            };
+          })
+          .filter((caption): caption is Caption => caption !== null);
+
+        if (decodedCaptions.length === 0) {
+          throw new Error("字幕の処理中にエラーが発生しました。");
+        }
 
         setCaptions(decodedCaptions);
         setCachedCaptions(videoId, decodedCaptions);
@@ -217,8 +192,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     } catch (err) {
       console.error("Error fetching captions:", err);
 
-      const errorMessage =
-        err instanceof Error ? err.message : "字幕の取得に失敗しました。";
+      const errorMessage = err instanceof Error ? err.message : "字幕の取得に失敗しました。";
       setError(errorMessage);
 
       // Only attempt retries if not rate limited
@@ -333,8 +307,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     };
 
     document.addEventListener("selectionchange", handleSelectionChange);
-    return () =>
-      document.removeEventListener("selectionchange", handleSelectionChange);
+    return () => document.removeEventListener("selectionchange", handleSelectionChange);
   }, [captions, showVideo]);
 
   const handleRetry = () => {
@@ -368,9 +341,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
-        <p className="ml-2 text-gray-600 dark:text-gray-400">
-          字幕を読み込み中...
-        </p>
+        <p className="ml-2 text-gray-600 dark:text-gray-400">字幕を読み込み中...</p>
       </div>
     );
   }
