@@ -16,12 +16,12 @@ app.set("trust proxy", true);
 // キャッシュの設定
 const cache = new Keyv({
   ttl: 24 * 60 * 60 * 1000, // 24時間
-  store: process.env.VERCEL ? new Map() : undefined, // Vercel環境ではメモリキャッシュを使用
+  store: new Map(), // 常にメモリキャッシュを使用
 });
 
 const errorCache = new Keyv({
-  ttl: 30 * 60 * 1000, // 30分
-  store: process.env.VERCEL ? new Map() : undefined,
+  ttl: 5 * 60 * 1000, // 5分に短縮
+  store: new Map(),
 });
 
 // プロキシサーバーのリスト（必要に応じて追加）
@@ -127,28 +127,25 @@ app.get("/api/captions/:videoId", async (req, res) => {
     if (cachedError) {
       return res.status(429).json({
         error: "この動画の字幕は一時的に取得できません。しばらく待ってから再試行してください。",
-        retryAfter: 1800,
+        retryAfter: 300,
       });
     }
 
-    // プロキシの設定
-    const proxy = getNextProxy();
-    const axiosConfig = proxy ? { proxy } : {};
-
     // 字幕の取得を試みる
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 5; // リトライ回数を増やす
     const languages = ["en", "en-US", "en-GB", "en-CA", "en-AU"];
 
     while (retryCount < maxRetries) {
       for (const lang of languages) {
         try {
+          console.log(`Attempting to fetch captions for ${videoId} in ${lang} (attempt ${retryCount + 1})`);
           const transcripts = await YoutubeTranscript.fetchTranscript(videoId, {
             lang,
-            ...axiosConfig,
           });
 
           if (!transcripts || transcripts.length === 0) {
+            console.log(`No transcripts found for ${videoId} in ${lang}`);
             continue;
           }
 
@@ -168,12 +165,15 @@ app.get("/api/captions/:videoId", async (req, res) => {
           if (error.message?.includes("too many requests")) {
             retryCount++;
             if (retryCount < maxRetries) {
-              await delay(1000 * Math.pow(2, retryCount));
+              const delayTime = 1000 * Math.pow(2, retryCount);
+              console.log(`Rate limited, waiting ${delayTime}ms before retry`);
+              await delay(delayTime);
               continue;
             }
           }
 
           if (error.message?.includes("Transcript is disabled")) {
+            console.log(`Transcript disabled for ${videoId}`);
             await errorCache.set(videoId, true);
             return res.status(404).json({
               error: "この動画では字幕が無効になっています。",
@@ -183,15 +183,16 @@ app.get("/api/captions/:videoId", async (req, res) => {
           }
         }
       }
-      break;
+      retryCount++;
     }
 
     // すべての試行が失敗した場合
+    console.log(`All attempts failed for ${videoId}`);
     await errorCache.set(videoId, true);
     return res.status(429).json({
       error: "字幕の取得に失敗しました。しばらく待ってから再試行してください。",
       details: "一時的な制限により字幕を取得できません。",
-      retryAfter: 1800,
+      retryAfter: 300,
     });
   } catch (error: any) {
     console.error("Error in captions endpoint:", error);
