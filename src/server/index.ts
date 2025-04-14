@@ -4,7 +4,6 @@ import cors from "cors";
 import Keyv from "keyv";
 import rateLimit from "express-rate-limit";
 import { createServer } from "node:http";
-import { AxiosProxyConfig } from "axios";
 
 const app = express();
 
@@ -23,19 +22,6 @@ const errorCache = new Keyv({
   ttl: 5 * 60 * 1000, // 5分に短縮
   store: new Map(),
 });
-
-// プロキシサーバーのリスト（必要に応じて追加）
-const proxyServers: AxiosProxyConfig[] = [
-  // プロキシサーバーのURLを追加
-];
-
-let currentProxyIndex = 0;
-
-const getNextProxy = (): AxiosProxyConfig | null => {
-  if (proxyServers.length === 0) return null;
-  currentProxyIndex = (currentProxyIndex + 1) % proxyServers.length;
-  return proxyServers[currentProxyIndex];
-};
 
 cache.on("error", (err) => console.error("Keyv connection error:", err));
 errorCache.on("error", (err) => console.error("Error cache connection error:", err));
