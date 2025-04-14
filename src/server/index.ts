@@ -1,5 +1,17 @@
+/**
+ * YouTube字幕取得サーバー
+ * @module server/index
+ * @description YouTube動画の字幕を取得するためのサーバー
+ * @requires express
+ * @requires youtubei.js
+ * @requires cors
+ * @requires keyv
+ * @requires express-rate-limit
+ * @requires node:http
+ */
+
 import express from "express";
-import { Innertube } from "youtubei.js/web";
+import { Innertube } from "youtubei.js";
 import cors from "cors";
 import Keyv from "keyv";
 import rateLimit from "express-rate-limit";
