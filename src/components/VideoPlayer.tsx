@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useEffect, useRef } from "react";
 import YouTube from "react-youtube";
 import { Caption } from "../types/youtube";
@@ -9,7 +10,14 @@ interface VideoPlayerProps {
   videoId: string;
 }
 
-function decodeHTMLEntities(text: string): string {
+/**
+ * HTMLエンティティをデコードする関数
+ * @param {string} text - デコードするテキスト
+ * @returns {string} デコードされたテキスト
+ */
+function decodeHTMLEntities(text: string | undefined): string {
+  if (!text) return "";
+
   const textarea = document.createElement("textarea");
   textarea.innerHTML = text
     .replace(/&amp;/g, "&")
@@ -182,10 +190,24 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
           throw new Error("この動画には英語の字幕がありません。");
         }
 
-        const decodedCaptions = data.map((caption) => ({
-          ...caption,
-          text: decodeHTMLEntities(caption.text),
-        }));
+        // 字幕データの処理を改善
+        const decodedCaptions = data
+          .filter((caption) => caption.text) // テキストが存在する字幕のみをフィルタリング
+          .map((caption, index, array) => {
+            // endプロパティがnullの場合、次の字幕のstart時間を使用
+            const end =
+              caption.end !== null
+                ? caption.end
+                : index < array.length - 1
+                ? array[index + 1].start
+                : caption.start + 5; // 最後の字幕の場合は5秒後をデフォルト値として設定
+
+            return {
+              ...caption,
+              text: decodeHTMLEntities(caption.text),
+              end: end,
+            };
+          });
 
         setCaptions(decodedCaptions);
         setCachedCaptions(videoId, decodedCaptions);
