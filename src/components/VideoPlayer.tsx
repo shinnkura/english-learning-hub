@@ -146,54 +146,21 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
 
         clearTimeout(timeoutId);
 
-        if (response.status === 429) {
-          const data = await response.json().catch(() => ({
-            error: "APIリクエスト制限に達しました。しばらく待ってから再試行してください。",
-            retryAfter: 1800,
-          }));
-
-          const retryAfter = response.headers.get("Retry-After")
-            ? parseInt(response.headers.get("Retry-After") || "1800", 10)
-            : data.retryAfter || 1800;
-
-          setIsCircuitOpenClient(true);
-          setRetryAfterClient(retryAfter);
-
-          // Clear any existing circuit reset timer
-          if (circuitResetTimer) {
-            clearTimeout(circuitResetTimer);
-          }
-
-          // Set a timer to reset the circuit breaker
-          const timer = setTimeout(() => {
-            setIsCircuitOpenClient(false);
-            setRetryAfterClient(null);
-            setCircuitResetTimer(null);
-            // Automatically retry when the circuit breaker opens
-            fetchCaptions();
-          }, retryAfter * 1000);
-
-          setCircuitResetTimer(timer);
-          clearCaptionsCache(videoId);
-
-          throw new Error(`APIリクエスト制限に達しました。${retryAfter}秒後に再試行してください。`);
-        }
+        const data = await response.json();
 
         if (!response.ok) {
-          const data = await response.json().catch(() => ({ error: "この動画の字幕を取得できませんでした。" }));
           throw new Error(data.error || "この動画の字幕を取得できませんでした。");
         }
 
-        const data = await response.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
+        if (!data || !Array.isArray(data) || data.length === 0) {
           throw new Error("この動画には英語の字幕がありません。");
         }
 
         // 字幕データの処理を改善
         const decodedCaptions = data
-          .filter((caption) => caption.text) // テキストが存在する字幕のみをフィルタリング
+          .filter((caption) => caption && caption.text) // nullチェックを追加
           .map((caption, index, array) => {
+            if (!caption) return null;
             // endプロパティがnullの場合、次の字幕のstart時間を使用
             const end =
               caption.end !== null
@@ -204,10 +171,15 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
 
             return {
               ...caption,
-              text: decodeHTMLEntities(caption.text),
+              text: decodeHTMLEntities(caption.text) || "",
               end: end,
             };
-          });
+          })
+          .filter((caption): caption is Caption => caption !== null);
+
+        if (decodedCaptions.length === 0) {
+          throw new Error("字幕の処理中にエラーが発生しました。");
+        }
 
         setCaptions(decodedCaptions);
         setCachedCaptions(videoId, decodedCaptions);
