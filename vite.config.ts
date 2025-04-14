@@ -45,12 +45,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api/transcript": {
+      "/api/captions": {
         target: `http://127.0.0.1:3001`,
         changeOrigin: true,
         secure: false,
         ws: true,
-        rewrite: (path) => path.replace(/^\/api\/transcript/, "/api/captions"),
         timeout: 120000,
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, res) => {
@@ -70,36 +69,6 @@ export default defineConfig({
             // Remove potentially problematic headers
             proxyReq.removeHeader("origin");
             proxyReq.removeHeader("referer");
-
-            // Add necessary headers
-            proxyReq.setHeader("X-Forwarded-For", req.socket.remoteAddress || "");
-            proxyReq.setHeader("X-Forwarded-Proto", "http");
-            proxyReq.setHeader("X-Forwarded-Host", req.headers.host || "");
-            proxyReq.setHeader("Accept", "application/json");
-            proxyReq.setHeader("Host", `127.0.0.1:3001`);
-          });
-          proxy.on("proxyRes", (proxyRes, _req, res) => {
-            res.setHeader("Content-Type", "application/json");
-            res.setHeader("Access-Control-Allow-Origin", "*");
-
-            if (proxyRes.statusCode >= 400) {
-              let body = "";
-              proxyRes.on("data", (chunk) => {
-                body += chunk;
-              });
-              proxyRes.on("end", () => {
-                try {
-                  const parsedBody = JSON.parse(body);
-                  res.end(JSON.stringify(parsedBody));
-                } catch (e) {
-                  res.end(
-                    JSON.stringify({
-                      error: "字幕の取得に失敗しました。もう一度お試しください。",
-                    })
-                  );
-                }
-              });
-            }
           });
         },
       },
