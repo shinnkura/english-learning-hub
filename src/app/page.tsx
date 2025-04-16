@@ -19,6 +19,7 @@ import ActivityGraph from "../components/ActivityGraph";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { Link } from "react-router-dom";
+import youtubeIcon from "../assets/youtube_social_icon_red.png";
 
 export default function Home() {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -43,14 +44,7 @@ export default function Home() {
 
   const features = [
     {
-      icon: (
-        <img
-          src="/youtube_social_icon_red.png"
-          alt="YouTube"
-          width={48}
-          height={48}
-        />
-      ),
+      icon: <img src={youtubeIcon} alt="YouTube" width={48} height={48} />,
       title: "YouTubeで英語学習",
       description:
         "お気に入りのYouTube動画で楽しく英語を学習。字幕を使って効果的に学べます。",

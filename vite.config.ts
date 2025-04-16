@@ -31,7 +31,11 @@ const findPort = async (startPort: number): Promise<number> => {
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    include: ["lucide-react", "@supabase/supabase-js", "@supabase/postgrest-js"],
+    include: [
+      "lucide-react",
+      "@supabase/supabase-js",
+      "@supabase/postgrest-js",
+    ],
   },
   build: {
     rollupOptions: {
@@ -39,7 +43,14 @@ export default defineConfig({
         format: "es",
         entryFileNames: "assets/[name]-[hash].js",
         chunkFileNames: "assets/[name]-[hash].js",
-        assetFileNames: "assets/[name]-[hash].[ext]",
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name) {
+            if (/\.(gif|jpe?g|png|svg)$/.test(assetInfo.name)) {
+              return "assets/images/[name]-[hash][extname]";
+            }
+          }
+          return "assets/[name]-[hash].[ext]";
+        },
       },
     },
   },
