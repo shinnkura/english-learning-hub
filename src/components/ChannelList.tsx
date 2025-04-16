@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import type { Channel } from "../types/youtube";
 import { Trash2 } from "lucide-react";
 import VideoList from "./VideoList";
+import youtubeIcon from "../assets/youtube_social_icon_red.png";
 
 interface ChannelListProps {
   categoryId: string;
@@ -115,12 +116,7 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
             onClick={() => setSelectedChannel(channel)}
             className="flex items-center gap-2 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
-            <img
-              src="/youtube_social_icon_red.png"
-              alt="YouTube"
-              width={24}
-              height={24}
-            />
+            <img src={youtubeIcon} alt="YouTube" width={24} height={24} />{" "}
             <span>{channel.channel_name}</span>
           </button>
           <button
