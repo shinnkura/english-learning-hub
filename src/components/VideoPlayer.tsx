@@ -2,7 +2,14 @@ import React from "react";
 import { useState, useEffect, useRef } from "react";
 import YouTube from "react-youtube";
 import { Caption } from "../types/youtube";
-import { BookOpen, Play, AlertTriangle, RefreshCw, Loader2, Clock } from "lucide-react";
+import {
+  BookOpen,
+  Play,
+  AlertTriangle,
+  RefreshCw,
+  Loader2,
+  Clock,
+} from "lucide-react";
 import SaveWordDialog from "./SaveWordDialog";
 import CaptionModal from "./CaptionModal";
 
@@ -53,8 +60,11 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
   } | null>(null);
   const [isCircuitOpenClient, setIsCircuitOpenClient] = useState(false);
   const [retryAfterClient, setRetryAfterClient] = useState<number | null>(null);
-  const [circuitResetTimer, setCircuitResetTimer] = useState<NodeJS.Timeout | null>(null);
-  const [retryTimeoutId, setRetryTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [circuitResetTimer, setCircuitResetTimer] =
+    useState<NodeJS.Timeout | null>(null);
+  const [retryTimeoutId, setRetryTimeoutId] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const playerRef = useRef<any>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
@@ -120,7 +130,9 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
 
       // Check if circuit breaker is open
       if (isCircuitOpenClient) {
-        throw new Error(`APIリクエスト制限に達しました。${retryAfterClient}秒後に再試行してください。`);
+        throw new Error(
+          `APIリクエスト制限に達しました。${retryAfterClient}秒後に再試行してください。`
+        );
       }
 
       // Check cache first
@@ -149,7 +161,9 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "この動画の字幕を取得できませんでした。");
+          throw new Error(
+            data.error || "この動画の字幕を取得できませんでした。"
+          );
         }
 
         if (!data || !Array.isArray(data) || data.length === 0) {
@@ -192,7 +206,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     } catch (err) {
       console.error("Error fetching captions:", err);
 
-      const errorMessage = err instanceof Error ? err.message : "字幕の取得に失敗しました。";
+      const errorMessage =
+        err instanceof Error ? err.message : "字幕の取得に失敗しました。";
       setError(errorMessage);
 
       // Only attempt retries if not rate limited
@@ -307,7 +322,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     };
 
     document.addEventListener("selectionchange", handleSelectionChange);
-    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+    return () =>
+      document.removeEventListener("selectionchange", handleSelectionChange);
   }, [captions, showVideo]);
 
   const handleRetry = () => {
@@ -341,7 +357,9 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
-        <p className="ml-2 text-gray-600 dark:text-gray-400">字幕を読み込み中...</p>
+        <p className="ml-2 text-gray-600 dark:text-gray-400">
+          字幕を読み込み中...
+        </p>
       </div>
     );
   }

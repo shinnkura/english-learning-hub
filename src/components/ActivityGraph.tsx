@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ActivityData } from "../types/youtube";

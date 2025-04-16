@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Category } from "../types/youtube";
 import { Pencil, Trash2, ChevronDown, ChevronUp, Plus } from "lucide-react";

@@ -71,7 +71,7 @@ export default function AddChannelDialog({
     value: string;
   }) => {
     try {
-      const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+      const apiKey = process.env.VITE_YOUTUBE_API_KEY;
       if (!apiKey) {
         throw new Error("YouTube API キーが設定されていません");
       }

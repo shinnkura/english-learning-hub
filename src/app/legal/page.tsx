@@ -1,10 +1,10 @@
-/**
- * 利用規約とプライバシーポリシーを表示するページコンポーネント
- * @module LegalPage
- */
-
-import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import React, { useState, useEffect } from "react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
 import { Card, CardContent } from "../../components/ui/card";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
@@ -38,7 +38,10 @@ export default function LegalPage() {
           throw new Error("コンテンツの読み込みに失敗しました");
         }
 
-        const [terms, privacy] = await Promise.all([termsResponse.text(), privacyResponse.text()]);
+        const [terms, privacy] = await Promise.all([
+          termsResponse.text(),
+          privacyResponse.text(),
+        ]);
 
         setTermsContent(terms);
         setPrivacyContent(privacy);
@@ -78,7 +81,9 @@ export default function LegalPage() {
           戻る
         </Button>
         <h1 className="text-3xl font-bold mb-4">法的情報</h1>
-        <p className="text-muted-foreground">利用規約とプライバシーポリシーをご確認ください。</p>
+        <p className="text-muted-foreground">
+          利用規約とプライバシーポリシーをご確認ください。
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -97,7 +102,9 @@ export default function LegalPage() {
                   </div>
                 ) : (
                   <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{termsContent}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {termsContent}
+                    </ReactMarkdown>
                   </div>
                 )}
               </ScrollArea>
@@ -115,7 +122,9 @@ export default function LegalPage() {
                   </div>
                 ) : (
                   <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{privacyContent}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {privacyContent}
+                    </ReactMarkdown>
                   </div>
                 )}
               </ScrollArea>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Video } from "../types/youtube";
 import { RefreshCw } from "lucide-react";
 import VideoPlayer from "./VideoPlayer";
@@ -22,7 +22,7 @@ export default function VideoList({ channelId }: VideoListProps) {
       setIsLoading(true);
       setError(null);
 
-      const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+      const apiKey = process.env.VITE_YOUTUBE_API_KEY;
       if (!apiKey) {
         throw new Error("YouTube API キーが設定されていません");
       }

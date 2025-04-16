@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Plus,
   LogIn,
@@ -7,11 +7,9 @@ import {
   Sun,
   Moon,
   Sparkles,
-  Youtube,
   BookOpenCheck,
   Users,
   FileText,
-  GraduationCap,
 } from "lucide-react";
 import CategoryList from "../components/CategoryList";
 import AddCategoryDialog from "../components/AddCategoryDialog";
@@ -45,7 +43,14 @@ export default function Home() {
 
   const features = [
     {
-      icon: <GraduationCap className="w-12 h-12 text-red-500" />,
+      icon: (
+        <img
+          src="/youtube_social_icon_red.png"
+          alt="YouTube"
+          width={48}
+          height={48}
+        />
+      ),
       title: "YouTubeで英語学習",
       description:
         "お気に入りのYouTube動画で楽しく英語を学習。字幕を使って効果的に学べます。",

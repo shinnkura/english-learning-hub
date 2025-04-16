@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { SavedWord } from "../types/youtube";
 import { Rotate3D, Check, X, ExternalLink, ArrowLeft } from "lucide-react";
