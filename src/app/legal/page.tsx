@@ -13,10 +13,6 @@ import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-/**
- * 利用規約とプライバシーポリシーを表示するページコンポーネント
- * @returns {JSX.Element} 利用規約とプライバシーポリシーのページ
- */
 export default function LegalPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("terms");

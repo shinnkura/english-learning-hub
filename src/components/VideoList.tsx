@@ -22,7 +22,7 @@ export default function VideoList({ channelId }: VideoListProps) {
       setIsLoading(true);
       setError(null);
 
-      const apiKey = process.env.VITE_YOUTUBE_API_KEY;
+      const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
       if (!apiKey) {
         throw new Error("YouTube API キーが設定されていません");
       }
