@@ -14,6 +14,38 @@ export default function VideoList({ channelId }: VideoListProps) {
   const [error, setError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
 
+  // ---------------------
+  // 追加: キャッシュ管理用の定数
+  // ---------------------
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+  // 何らかの形でキャッシュ保存する例 (LocalStorage など)
+  const getCachedVideos = (channelId: string) => {
+    const cacheString = localStorage.getItem(`youtubeVideos_${channelId}`);
+    if (!cacheString) return null;
+
+    const cache = JSON.parse(cacheString);
+    // データが1日以内に取得されたものであれば再利用
+    if (Date.now() - cache.timestamp < ONE_DAY_MS) {
+      return cache.videos;
+    }
+    return null;
+  };
+
+  const setCachedVideos = (channelId: string, videos: any) => {
+    const cacheData = {
+      timestamp: Date.now(),
+      videos,
+    };
+    localStorage.setItem(
+      `youtubeVideos_${channelId}`,
+      JSON.stringify(cacheData)
+    );
+  };
+
+  // ---------------------
+  // 既存の fetchVideos を修正
+  // ---------------------
   const fetchVideos = async (retry = false) => {
     try {
       if (retry) {
@@ -22,11 +54,25 @@ export default function VideoList({ channelId }: VideoListProps) {
       setIsLoading(true);
       setError(null);
 
+      // ====== 1. キャッシュを確認 ======
+      const cached = getCachedVideos(channelId);
+      if (cached) {
+        console.log("Using cached videos (less than 1 day old).");
+        setVideos(cached);
+
+        // ランダムに1つの動画を選択
+        const randomIndex = Math.floor(Math.random() * cached.length);
+        setSelectedVideo(cached[randomIndex]);
+        return; // キャッシュがあればここで終了
+      }
+
+      // ====== 2. YouTube API キーの確認 ======
       const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
       if (!apiKey) {
         throw new Error("YouTube API キーが設定されていません");
       }
 
+      // ====== 3. API 呼び出し ======
       const response = await fetch(
         `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=10&key=${apiKey}`
       );
@@ -50,9 +96,11 @@ export default function VideoList({ channelId }: VideoListProps) {
         description: item.snippet.description,
       }));
 
-      setVideos(videos);
+      // ====== 4. 取得結果をキャッシュに保存 (timestamp付き) ======
+      setCachedVideos(channelId, videos);
 
-      // ランダムに1つの動画を選択
+      // ====== 5. ランダム選択して状態を更新 ======
+      setVideos(videos);
       const randomIndex = Math.floor(Math.random() * videos.length);
       setSelectedVideo(videos[randomIndex]);
     } catch (err) {

@@ -66,31 +66,54 @@ export default function AddChannelDialog({
     }
   };
 
+  // 1日(24時間)をミリ秒で定義
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+  /**
+   * YouTubeチャンネル情報を取得し、キャッシュがあれば再利用する
+   */
   const fetchChannelInfo = async (identifier: {
     type: "id" | "handle" | "custom";
     value: string;
   }) => {
+    // 1. キャッシュのキーを組み立てる
+    const cacheKey = `channelInfo_${identifier.type}_${identifier.value}`;
+
+    // 2. キャッシュに保存されたデータがあれば取得し、有効期限内かチェック
+    const cachedString = localStorage.getItem(cacheKey);
+    if (cachedString) {
+      const cached = JSON.parse(cachedString) as {
+        data: { channelId: string; channelName: string };
+        timestamp: number;
+      };
+      // 現在時刻 - キャッシュ保存時刻 < 1日 なら有効期限内とみなす
+      if (Date.now() - cached.timestamp < ONE_DAY_MS) {
+        // キャッシュが有効なので、そのまま返す
+        console.log("Cache hit. Using stored channel info.");
+        return cached.data;
+      }
+    }
+
     try {
       const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
       if (!apiKey) {
         throw new Error("YouTube API キーが設定されていません");
       }
 
+      // 3. YouTube Data API のエンドポイントを組み立て
       let endpoint =
         "https://www.googleapis.com/youtube/v3/channels?part=snippet";
-
       if (identifier.type === "id") {
         endpoint += `&id=${identifier.value}`;
       } else if (identifier.type === "handle" || identifier.type === "custom") {
         endpoint += `&forHandle=@${identifier.value}`;
       }
-
       endpoint += `&key=${apiKey}`;
 
+      // 4. API を呼び出してチャンネル情報を取得
       const response = await fetch(endpoint);
-
       if (!response.ok) {
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         throw new Error(
           data.error?.message || "YouTubeチャンネルの情報取得に失敗しました"
         );
@@ -98,39 +121,57 @@ export default function AddChannelDialog({
 
       const data = await response.json();
 
+      // 5. 該当チャンネルが存在しない or items が空の場合の fallback 処理
       if (!data.items || data.items.length === 0) {
-        // If handle lookup fails, try searching by username
+        // handle / custom のときはusername検索を試す
         if (identifier.type === "handle" || identifier.type === "custom") {
           const searchEndpoint = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${identifier.value}&key=${apiKey}`;
           const searchResponse = await fetch(searchEndpoint);
-
           if (!searchResponse.ok) {
             throw new Error("チャンネルの検索に失敗しました");
           }
 
           const searchData = await searchResponse.json();
-
           if (!searchData.items || searchData.items.length === 0) {
             throw new Error(
               "チャンネルが見つかりませんでした。URLを確認してください。"
             );
           }
-
-          return {
+          // 検索で見つかった場合のチャンネル情報を返す
+          const fallbackResult = {
             channelId: searchData.items[0].id.channelId,
             channelName: searchData.items[0].snippet.channelTitle,
           };
+          // キャッシュに保存
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ data: fallbackResult, timestamp: Date.now() })
+          );
+          return fallbackResult;
         }
 
+        // いずれの方法でも見つからなかった場合
         throw new Error(
           "チャンネルが見つかりませんでした。URLを確認してください。"
         );
       }
 
-      return {
+      // 6. 正常にチャンネル情報が取得できた場合の処理
+      const result = {
         channelId: data.items[0].id,
         channelName: data.items[0].snippet.title,
       };
+
+      // 7. 結果をローカルストレージにキャッシュ保存（タイムスタンプ付き）
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          data: result,
+          timestamp: Date.now(),
+        })
+      );
+
+      return result;
     } catch (err) {
       if (err instanceof Error) {
         throw new Error(err.message);
