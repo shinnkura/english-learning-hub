@@ -5,9 +5,10 @@ import VideoPlayer from "./VideoPlayer";
 
 interface VideoListProps {
   channelId: string;
+  onBack: () => void;
 }
 
-export default function VideoList({ channelId }: VideoListProps) {
+export default function VideoList({ channelId, onBack }: VideoListProps) {
   const [videos, setVideos] = useState<Video[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,6 +121,16 @@ export default function VideoList({ channelId }: VideoListProps) {
     fetchVideos();
   }, [channelId]);
 
+  const handleNextVideo = () => {
+    if (videos.length === 0) return;
+
+    const currentIndex = videos.findIndex(
+      (video) => video.id === selectedVideo?.id
+    );
+    const nextIndex = (currentIndex + 1) % videos.length;
+    setSelectedVideo(videos[nextIndex]);
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-4">
@@ -158,6 +169,21 @@ export default function VideoList({ channelId }: VideoListProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <button
+          onClick={onBack}
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
+        >
+          ← チャンネル一覧に戻る
+        </button>
+        <button
+          onClick={handleNextVideo}
+          className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
+        >
+          次の動画
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </div>
       {selectedVideo && (
         <VideoPlayer key={selectedVideo.id} videoId={selectedVideo.id} />
       )}

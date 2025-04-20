@@ -94,13 +94,10 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
   if (selectedChannel) {
     return (
       <div className="space-y-4">
-        <button
-          onClick={() => setSelectedChannel(null)}
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
-        >
-          ← チャンネル一覧に戻る
-        </button>
-        <VideoList channelId={selectedChannel.channel_id} />
+        <VideoList
+          channelId={selectedChannel.channel_id}
+          onBack={() => setSelectedChannel(null)}
+        />
       </div>
     );
   }
