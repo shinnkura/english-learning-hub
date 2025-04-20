@@ -60,11 +60,9 @@ export default function VideoList({ channelId, onBack }: VideoListProps) {
       if (cached) {
         console.log("Using cached videos (less than 1 day old).");
         setVideos(cached);
-
-        // ランダムに1つの動画を選択
         const randomIndex = Math.floor(Math.random() * cached.length);
         setSelectedVideo(cached[randomIndex]);
-        return; // キャッシュがあればここで終了
+        return;
       }
 
       // ====== 2. YouTube API キーの確認 ======
@@ -75,7 +73,7 @@ export default function VideoList({ channelId, onBack }: VideoListProps) {
 
       // ====== 3. API 呼び出し ======
       const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=10&key=${apiKey}`
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=50&key=${apiKey}`
       );
 
       if (!response.ok) {
@@ -89,13 +87,22 @@ export default function VideoList({ channelId, onBack }: VideoListProps) {
         throw new Error("動画が見つかりませんでした");
       }
 
-      const videos: Video[] = data.items.map((item: any) => ({
-        id: item.id.videoId,
-        title: item.snippet.title,
-        thumbnail: item.snippet.thumbnails.medium.url,
-        publishedAt: new Date(item.snippet.publishedAt),
-        description: item.snippet.description,
-      }));
+      // short動画を除外
+      const videos: Video[] = data.items
+        .filter(
+          (item: any) => !item.snippet.title.toLowerCase().includes("shorts")
+        )
+        .map((item: any) => ({
+          id: item.id.videoId,
+          title: item.snippet.title,
+          thumbnail: item.snippet.thumbnails.medium.url,
+          publishedAt: new Date(item.snippet.publishedAt),
+          description: item.snippet.description,
+        }));
+
+      if (videos.length === 0) {
+        throw new Error("フィルタリング後に動画が見つかりませんでした");
+      }
 
       // ====== 4. 取得結果をキャッシュに保存 (timestamp付き) ======
       setCachedVideos(channelId, videos);
@@ -124,11 +131,9 @@ export default function VideoList({ channelId, onBack }: VideoListProps) {
   const handleNextVideo = () => {
     if (videos.length === 0) return;
 
-    const currentIndex = videos.findIndex(
-      (video) => video.id === selectedVideo?.id
-    );
-    const nextIndex = (currentIndex + 1) % videos.length;
-    setSelectedVideo(videos[nextIndex]);
+    // ランダムに次の動画を選択
+    const randomIndex = Math.floor(Math.random() * videos.length);
+    setSelectedVideo(videos[randomIndex]);
   };
 
   if (isLoading) {
