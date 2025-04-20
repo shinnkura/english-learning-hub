@@ -245,12 +245,6 @@ export default function Home() {
           </div>
         </div>
 
-        {user && !showFlashcards && (
-          <div className="mb-8 transform hover:scale-[1.01] transition-transform duration-300">
-            <ActivityGraph />
-          </div>
-        )}
-
         <div className="transform hover:scale-[1.01] transition-transform duration-300">
           {showFlashcards ? (
             <FlashcardView onClose={() => setShowFlashcards(false)} />
@@ -258,6 +252,12 @@ export default function Home() {
             <CategoryList key={key} />
           )}
         </div>
+
+        {user && !showFlashcards && (
+          <div className="mt-8 transform hover:scale-[1.01] transition-transform duration-300">
+            <ActivityGraph />
+          </div>
+        )}
 
         <AddCategoryDialog
           open={isAddCategoryOpen}
