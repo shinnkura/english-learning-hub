@@ -50,7 +50,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
   const [retryCount, setRetryCount] = useState(0);
   const [retryDelay, setRetryDelay] = useState(INITIAL_RETRY_DELAY);
   const [showVideo, setShowVideo] = useState(false);
-  const [isCaptionModalOpen, setIsCaptionModalOpen] = useState(true);
+  const [isCaptionModalOpen, setIsCaptionModalOpen] = useState(false);
   const [selectedText, setSelectedText] = useState("");
   const [isSaveWordOpen, setIsSaveWordOpen] = useState(false);
   const [selectedCaption, setSelectedCaption] = useState<Caption | null>(null);
