@@ -147,10 +147,11 @@ export default function CategoryList() {
               >
                 <button
                   onClick={() => handleAddChannel(category)}
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-2"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
                   title="チャンネルを追加"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
+                  <span>チャンネル追加</span>
                 </button>
                 <button
                   onClick={() => handleEditCategory(category)}
