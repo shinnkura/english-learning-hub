@@ -125,23 +125,26 @@ export default function CategoryList() {
           className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
         >
           <div className="p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <button
-                onClick={() =>
-                  setExpandedCategory(
-                    expandedCategory === category.id ? null : category.id
-                  )
-                }
-                className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
+            <div
+              onClick={() =>
+                setExpandedCategory(
+                  expandedCategory === category.id ? null : category.id
+                )
+              }
+              className="flex flex-col sm:flex-row sm:items-center gap-4 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 {category.name}
                 {expandedCategory === category.id ? (
                   <ChevronUp className="w-5 h-5" />
                 ) : (
                   <ChevronDown className="w-5 h-5" />
                 )}
-              </button>
-              <div className="flex gap-2 sm:ml-auto">
+              </div>
+              <div
+                className="flex gap-2 sm:ml-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   onClick={() => handleAddChannel(category)}
                   className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-2"
