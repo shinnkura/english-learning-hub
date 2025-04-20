@@ -345,7 +345,7 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
         autoplay: 0,
         modestbranding: 1,
         rel: 0,
-        cc_load_policy: 1,
+        cc_load_policy: 0,
         cc_lang_pref: "en",
         origin: origin,
         enablejsapi: 1,
