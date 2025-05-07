@@ -103,27 +103,29 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {channels.map((channel) => (
         <div
           key={channel.id}
-          className="flex items-center justify-between bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg shadow-sm p-3 hover:shadow-md transition-all duration-300"
+          className="bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/80 dark:to-gray-800/60 backdrop-blur-sm rounded-xl shadow-sm p-5 hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
         >
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center justify-between">
             <button
               onClick={() => setSelectedChannel(channel)}
-              className="flex items-center gap-2 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-1"
+              className="flex items-center gap-3 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors group flex-1"
             >
-              <img src={youtubeIcon} alt="YouTube" width={24} height={24} />{" "}
-              <span>{channel.channel_name}</span>
+              <div className="flex-shrink-0 bg-white rounded-full p-1.5 shadow-sm group-hover:shadow transition-all duration-300">
+                <img src={youtubeIcon} alt="YouTube" width={24} height={24} className="w-6 h-6" />
+              </div>
+              <span className="font-medium truncate">{channel.channel_name}</span>
+            </button>
+            <button
+              onClick={() => handleDelete(channel.id)}
+              className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors ml-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+            >
+              <Trash2 className="w-5 h-5" />
             </button>
           </div>
-          <button
-            onClick={() => handleDelete(channel.id)}
-            className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors ml-2"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
         </div>
       ))}
     </div>

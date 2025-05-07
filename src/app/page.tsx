@@ -10,6 +10,7 @@ import {
   BookOpenCheck,
   Users,
   FileText,
+  LogOut,
 } from "lucide-react";
 import CategoryList from "../components/CategoryList";
 import AddCategoryDialog from "../components/AddCategoryDialog";
@@ -19,6 +20,7 @@ import ActivityGraph from "../components/ActivityGraph";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { Link } from "react-router-dom";
+import Footer from "../components/Footer";
 import youtubeIcon from "../assets/youtube_social_icon_red.png";
 
 export default function Home() {
@@ -176,25 +178,22 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <button
-            onClick={handleTitleClick}
-            className="flex items-center gap-2 text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 hover:from-purple-600 hover:to-blue-600 dark:hover:from-purple-400 dark:hover:to-blue-400 transition-all duration-300"
+          <div
+            className="flex items-center gap-3"
           >
-            <Sparkles className="w-8 h-8" />
-            English Learning Hub
-          </button>
+            <button
+              onClick={handleTitleClick}
+              className="flex items-center gap-2 text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 hover:from-indigo-500 hover:to-blue-500 dark:hover:from-indigo-400 dark:hover:to-blue-400 transition-all duration-300"
+            >
+              <Sparkles className="w-8 h-8" />
+              <span>English Learning Hub</span>
+            </button>
+          </div>
 
           <div className="flex items-center gap-4">
-            <Link
-              to="/legal"
-              className="flex items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300"
-            >
-              <FileText className="w-5 h-5" />
-              <span className="hidden sm:inline">利用規約</span>
-            </Link>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+              className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 text-gray-600 dark:text-gray-300"
               title={
                 theme === "dark"
                   ? "ライトモードに切り替え"
@@ -207,35 +206,24 @@ export default function Home() {
                 <Moon className="w-5 h-5" />
               )}
             </button>
-
-            <button
-              onClick={handleMenuToggle}
-              className="sm:hidden p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-          </div>
-
-          <div
-            className={`
-            flex flex-col sm:flex-row gap-3 w-full sm:w-auto
-            ${isMenuOpen ? "block" : "hidden"} sm:flex
-          `}
-          >
-            <button
-              onClick={() => setIsAddCategoryOpen(true)}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 text-white px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:translate-y-[-1px] transition-all duration-300 w-full sm:w-auto"
-            >
-              <Plus className="w-5 h-5" />
-              カテゴリを追加
-            </button>
             <button
               onClick={() => signOut()}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-gray-500 to-gray-600 dark:from-gray-600 dark:to-gray-700 text-white px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:translate-y-[-1px] transition-all duration-300 w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-6 py-2.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
             >
+              <LogOut className="w-5 h-5" />
               ログアウト
             </button>
           </div>
+        </div>
+
+        <div className="mb-8">
+          <button
+            onClick={() => setIsAddCategoryOpen(true)}
+            className="flex items-center gap-2 px-6 py-3 text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            カテゴリを追加
+          </button>
         </div>
 
         <div className="transform hover:scale-[1.01] transition-transform duration-300">
@@ -247,12 +235,14 @@ export default function Home() {
         </div>
 
         <AddCategoryDialog
+          data-add-category
           open={isAddCategoryOpen}
           onOpenChange={setIsAddCategoryOpen}
           onCategoryAdded={handleCategoryAdded}
         />
         <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
       </div>
+      <Footer />
     </div>
   );
 }

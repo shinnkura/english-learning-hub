@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Category } from "../types/youtube";
-import { Pencil, Trash2, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import ChannelList from "./ChannelList";
 import AddChannelDialog from "./AddChannelDialog";
@@ -11,7 +11,6 @@ export default function CategoryList() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -118,63 +117,39 @@ export default function CategoryList() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {categories.map((category) => (
-        <div
-          key={category.id}
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
-        >
-          <div className="p-4">
-            <div
-              onClick={() =>
-                setExpandedCategory(
-                  expandedCategory === category.id ? null : category.id
-                )
-              }
-              className="flex flex-col sm:flex-row sm:items-center gap-4 cursor-pointer"
-            >
-              <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                {category.name}
-                {expandedCategory === category.id ? (
-                  <ChevronUp className="w-5 h-5" />
-                ) : (
-                  <ChevronDown className="w-5 h-5" />
-                )}
-              </div>
-              <div
-                className="flex gap-2 sm:ml-auto"
-                onClick={(e) => e.stopPropagation()}
+        <div key={category.id} className="space-y-6">
+          <div className="flex items-center justify-between bg-gradient-to-r from-white/90 to-white/70 dark:from-gray-800/90 dark:to-gray-800/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {category.name}
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleAddChannel(category)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-full shadow-sm hover:shadow-md transition-all duration-300"
+                title="チャンネルを追加"
               >
-                <button
-                  onClick={() => handleAddChannel(category)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
-                  title="チャンネルを追加"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>チャンネル追加</span>
-                </button>
-                <button
-                  onClick={() => handleEditCategory(category)}
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-2"
-                  title="カテゴリを編集"
-                >
-                  <Pencil className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(category.id)}
-                  className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-2"
-                  title="カテゴリを削除"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
+                <Plus className="w-4 h-4" />
+                <span>チャンネル追加</span>
+              </button>
+              <button
+                onClick={() => handleEditCategory(category)}
+                className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                title="カテゴリを編集"
+              >
+                <Pencil className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => handleDelete(category.id)}
+                className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                title="カテゴリを削除"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             </div>
           </div>
-          {expandedCategory === category.id && (
-            <div className="border-t border-gray-100 dark:border-gray-700 p-4">
-              <ChannelList categoryId={category.id} />
-            </div>
-          )}
+          <ChannelList categoryId={category.id} />
         </div>
       ))}
       {selectedCategory && (
