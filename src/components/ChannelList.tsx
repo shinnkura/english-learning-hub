@@ -114,8 +114,16 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
               onClick={() => setSelectedChannel(channel)}
               className="flex items-center gap-3 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors group flex-1"
             >
-              <div className="flex-shrink-0 bg-white rounded-full p-1.5 shadow-sm group-hover:shadow transition-all duration-300">
-                <img src={youtubeIcon} alt="YouTube" width={24} height={24} className="w-6 h-6" />
+              <div className="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <img
+                  src={`https://i.ytimg.com/vi/${channel.channel_id}/default.jpg`}
+                  alt={channel.channel_name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = youtubeIcon;
+                    e.currentTarget.className = "w-8 h-8 m-1";
+                  }}
+                />
               </div>
               <span className="font-medium truncate">{channel.channel_name}</span>
             </button>
