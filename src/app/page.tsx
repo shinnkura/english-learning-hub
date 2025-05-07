@@ -223,13 +223,6 @@ export default function Home() {
           `}
           >
             <button
-              onClick={() => setShowFlashcards(!showFlashcards)}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:translate-y-[-1px] transition-all duration-300 w-full sm:w-auto"
-            >
-              <BookOpen className="w-5 h-5" />
-              {showFlashcards ? "学習を終了" : "単語を復習"}
-            </button>
-            <button
               onClick={() => setIsAddCategoryOpen(true)}
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 text-white px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:translate-y-[-1px] transition-all duration-300 w-full sm:w-auto"
             >
@@ -252,12 +245,6 @@ export default function Home() {
             <CategoryList key={key} />
           )}
         </div>
-
-        {user && !showFlashcards && (
-          <div className="mt-8 transform hover:scale-[1.01] transition-transform duration-300">
-            <ActivityGraph />
-          </div>
-        )}
 
         <AddCategoryDialog
           open={isAddCategoryOpen}
