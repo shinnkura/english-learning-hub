@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import type { Channel } from "../types/youtube";
 import { Trash2 } from "lucide-react";
 import VideoList from "./VideoList";
-import youtubeIcon from "../assets/youtube_social_icon_red.png";
+import youtubeIcon from "../assets/yt_icon_rgb.png";
 
 interface ChannelListProps {
   categoryId: string;

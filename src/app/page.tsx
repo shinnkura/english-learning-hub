@@ -21,7 +21,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { Link } from "react-router-dom";
 import Footer from "../components/Footer";
-import youtubeIcon from "../assets/youtube_social_icon_red.png";
+import youtubeIcon from "../assets/yt_icon_rgb.png";
 
 export default function Home() {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -178,9 +178,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div
-            className="flex items-center gap-3"
-          >
+          <div className="flex items-center gap-3">
             <button
               onClick={handleTitleClick}
               className="flex items-center gap-2 text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 hover:from-indigo-500 hover:to-blue-500 dark:hover:from-indigo-400 dark:hover:to-blue-400 transition-all duration-300"
