@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
-import { supabase } from "../lib/supabase";
+import { db } from "../lib/db";
 
 interface AddCategoryDialogProps {
   open: boolean;
@@ -23,33 +23,14 @@ export default function AddCategoryDialog({
     setIsSubmitting(true);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setError("ユーザーが認証されていません");
-        return;
-      }
-
-      const { error: insertError } = await supabase.from("categories").insert([
-        {
-          name: categoryName,
-          user_id: user.id,
-        },
-      ]);
-
-      if (insertError) {
-        console.error("Error creating category:", insertError);
-        setError("カテゴリの作成に失敗しました");
-        return;
-      }
+      await db.categories.create({ name: categoryName });
 
       setCategoryName("");
       onCategoryAdded();
       onOpenChange(false);
     } catch (err) {
       console.error("Error:", err);
-      setError("予期せぬエラーが発生しました");
+      setError("カテゴリの作成に失敗しました");
     } finally {
       setIsSubmitting(false);
     }

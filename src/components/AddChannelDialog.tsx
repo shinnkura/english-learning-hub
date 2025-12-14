@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
-import { supabase } from "../lib/supabase";
+import { db } from "../lib/db";
 import { Category } from "../types/youtube";
 
 interface AddChannelDialogProps {
@@ -186,39 +186,24 @@ export default function AddChannelDialog({
     setIsSubmitting(true);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("ユーザーが認証されていません");
-      }
-
       const channelIdentifier = extractChannelIdentifier(channelUrl);
       const channelInfo = await fetchChannelInfo(channelIdentifier);
 
       // Check if channel already exists in this category
-      const { data: existingChannels } = await supabase
-        .from("channels")
-        .select("*")
-        .eq("category_id", category.id)
-        .eq("channel_id", channelInfo.channelId);
+      const existingChannels = await db.channels.findByCategoryAndChannelId(
+        category.id,
+        channelInfo.channelId
+      );
 
       if (existingChannels && existingChannels.length > 0) {
         throw new Error("このチャンネルは既にこのカテゴリに追加されています");
       }
 
-      const { error: insertError } = await supabase.from("channels").insert([
-        {
-          category_id: category.id,
-          channel_id: channelInfo.channelId,
-          channel_name: channelInfo.channelName,
-          user_id: user.id,
-        },
-      ]);
-
-      if (insertError) {
-        throw new Error("チャンネルの追加に失敗しました");
-      }
+      await db.channels.create({
+        category_id: category.id,
+        channel_id: channelInfo.channelId,
+        channel_name: channelInfo.channelName,
+      });
 
       setChannelUrl("");
       onChannelAdded();

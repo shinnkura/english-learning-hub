@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { db } from "../lib/db";
 import type { Channel } from "../types/youtube";
 import { Trash2 } from "lucide-react";
 import VideoList from "./VideoList";
@@ -20,22 +20,11 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
       setIsLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from("channels")
-        .select("*")
-        .eq("category_id", categoryId)
-        .order("created_at", { ascending: false });
-
-      if (fetchError) {
-        console.error("Error fetching channels:", fetchError);
-        setError("チャンネルの取得に失敗しました");
-        return;
-      }
-
-      setChannels(data || []);
+      const data = await db.channels.findByCategory(categoryId);
+      setChannels(data as Channel[]);
     } catch (err) {
       console.error("Error:", err);
-      setError("予期せぬエラーが発生しました");
+      setError("チャンネルの取得に失敗しました");
     } finally {
       setIsLoading(false);
     }
@@ -47,21 +36,11 @@ export default function ChannelList({ categoryId }: ChannelListProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error: deleteError } = await supabase
-        .from("channels")
-        .delete()
-        .eq("id", id);
-
-      if (deleteError) {
-        console.error("Error deleting channel:", deleteError);
-        setError("チャンネルの削除に失敗しました");
-        return;
-      }
-
+      await db.channels.delete(id);
       await fetchChannels();
     } catch (err) {
       console.error("Error:", err);
-      setError("予期せぬエラーが発生しました");
+      setError("チャンネルの削除に失敗しました");
     }
   };
 

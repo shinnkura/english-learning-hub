@@ -1,7 +1,6 @@
 export interface Category {
   id: string;
   name: string;
-  user_id: string;
   created_at: string;
 }
 
@@ -10,7 +9,6 @@ export interface Channel {
   category_id: string;
   channel_id: string;
   channel_name: string;
-  user_id: string;
   created_at: string;
 }
 
@@ -20,7 +18,6 @@ export interface SavedWord {
   context: string;
   video_id: string;
   url: string;
-  user_id: string;
   created_at: string;
   next_review_date: string;
   remembered: boolean;

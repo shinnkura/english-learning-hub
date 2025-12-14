@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import { db } from "../lib/db";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ActivityData } from "../types/youtube";
 import {
@@ -25,13 +25,6 @@ export default function ActivityGraph() {
         setIsLoading(true);
         setError(null);
 
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) {
-          throw new Error("ユーザーが認証されていません");
-        }
-
         const days = Array.from({ length: period }, (_, i) => {
           const date = subDays(new Date(), i);
           return {
@@ -43,42 +36,29 @@ export default function ActivityGraph() {
 
         // 並列でデータを取得
         const [wordsResult, videosResult, reviewsResult] = await Promise.all([
-          supabase
-            .from("saved_words")
-            .select("created_at")
-            .eq("user_id", user.id),
-
-          supabase
-            .from("saved_words")
-            .select("video_id, created_at")
-            .eq("user_id", user.id),
-
-          supabase
-            .from("saved_words")
-            .select("created_at")
-            .eq("user_id", user.id)
-            .eq("remembered", true),
+          db.savedWords.getAllCreatedAt(),
+          db.savedWords.getAllWithVideoId(),
+          db.savedWords.getRememberedWords(),
         ]);
 
-        // エラーチェック
-        if (wordsResult.error) throw wordsResult.error;
-        if (videosResult.error) throw videosResult.error;
-        if (reviewsResult.error) throw reviewsResult.error;
+        const words = wordsResult as { created_at: string }[];
+        const videos = videosResult as { created_at: string; video_id: string }[];
+        const reviews = reviewsResult as { created_at: string }[];
 
         const activityData = days.map(({ date, start, end }) => {
           const dayWords =
-            wordsResult.data?.filter(
+            words?.filter(
               (w) => w.created_at >= start && w.created_at <= end
             ).length || 0;
 
           const dayVideos = new Set(
-            videosResult.data
+            videos
               ?.filter((v) => v.created_at >= start && v.created_at <= end)
               .map((v) => v.video_id)
           ).size;
 
           const dayReviews =
-            reviewsResult.data?.filter(
+            reviews?.filter(
               (r) => r.created_at >= start && r.created_at <= end
             ).length || 0;
 

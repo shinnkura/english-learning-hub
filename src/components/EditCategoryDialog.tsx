@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
-import { supabase } from "../lib/supabase";
+import { db } from "../lib/db";
 import { Category } from "../types/youtube";
 
 interface EditCategoryDialogProps {
@@ -26,23 +26,7 @@ export default function EditCategoryDialog({
     setIsSubmitting(true);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("ユーザーが認証されていません");
-      }
-
-      const { error: updateError } = await supabase
-        .from("categories")
-        .update({ name: categoryName })
-        .eq("id", category.id)
-        .eq("user_id", user.id);
-
-      if (updateError) {
-        console.error("Error updating category:", updateError);
-        throw new Error("カテゴリの更新に失敗しました");
-      }
+      await db.categories.update(category.id, { name: categoryName });
 
       onCategoryUpdated();
       onOpenChange(false);

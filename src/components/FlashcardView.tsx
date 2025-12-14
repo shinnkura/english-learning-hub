@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import { db } from "../lib/db";
 import { SavedWord } from "../types/youtube";
 import { Rotate3D, Check, X, ExternalLink, ArrowLeft } from "lucide-react";
 
@@ -19,27 +19,8 @@ export default function FlashcardView({ onClose }: FlashcardViewProps) {
       setIsLoading(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("ユーザーが認証されていません");
-      }
-
-      // 復習が必要な単語を取得
-      const { data: wordsToReview, error: fetchError } = await supabase
-        .from("saved_words")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("remembered", false)
-        .order("next_review_date", { ascending: true });
-
-      if (fetchError) {
-        throw new Error("単語の取得に失敗しました");
-      }
-
-      setWords(wordsToReview || []);
+      const wordsToReview = await db.savedWords.findForReview();
+      setWords(wordsToReview as SavedWord[]);
     } catch (err) {
       console.error("Error in fetchWords:", err);
       if (err instanceof Error) {
@@ -67,17 +48,10 @@ export default function FlashcardView({ onClose }: FlashcardViewProps) {
         nextReviewDate.setDate(nextReviewDate.getDate() + 7); // 1週間後
       }
 
-      const { error: updateError } = await supabase
-        .from("saved_words")
-        .update({
-          remembered,
-          next_review_date: nextReviewDate.toISOString(),
-        })
-        .eq("id", words[currentIndex].id);
-
-      if (updateError) {
-        throw new Error("更新に失敗しました");
-      }
+      await db.savedWords.update(words[currentIndex].id, {
+        remembered,
+        next_review_date: nextReviewDate.toISOString(),
+      });
 
       // 次の単語へ
       if (currentIndex < words.length - 1) {

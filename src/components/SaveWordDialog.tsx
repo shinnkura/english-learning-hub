@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
-import { supabase } from "../lib/supabase";
+import { db } from "../lib/db";
 
 interface SaveWordDialogProps {
   open: boolean;
@@ -28,31 +28,16 @@ export default function SaveWordDialog({
     setIsSubmitting(true);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("ユーザーが認証されていません");
-      }
-
       const url = `https://www.youtube.com/watch?v=${videoId}`;
-      const { error: insertError } = await supabase.from("saved_words").insert([
-        {
-          word,
-          context,
-          video_id: videoId,
-          url,
-          user_id: user.id,
-          meaning: meaning.trim(),
-          next_review_date: new Date().toISOString(),
-          remembered: false,
-        },
-      ]);
-
-      if (insertError) {
-        console.error("Error saving word:", insertError);
-        throw new Error("単語の保存に失敗しました");
-      }
+      await db.savedWords.create({
+        word,
+        context,
+        video_id: videoId,
+        url,
+        meaning: meaning.trim(),
+        next_review_date: new Date().toISOString(),
+        remembered: false,
+      });
 
       setIsSaved(true);
       setTimeout(() => {
@@ -61,6 +46,7 @@ export default function SaveWordDialog({
         onOpenChange(false);
       }, 1500);
     } catch (err) {
+      console.error("Error saving word:", err);
       if (err instanceof Error) {
         setError(err.message);
       } else {

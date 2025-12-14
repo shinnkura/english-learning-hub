@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { db } from "../lib/db";
 import type { Category } from "../types/youtube";
 import { Pencil, Trash2, Plus } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
 import ChannelList from "./ChannelList";
 import AddChannelDialog from "./AddChannelDialog";
 import EditCategoryDialog from "./EditCategoryDialog";
@@ -16,59 +15,33 @@ export default function CategoryList() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
-  const { user } = useAuth();
 
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from("categories")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (fetchError) {
-        console.error("Error fetching categories:", fetchError);
-        setError("カテゴリの取得に失敗しました");
-        return;
-      }
-
-      setCategories(data || []);
+      const data = await db.categories.findAll();
+      setCategories(data as Category[]);
     } catch (err) {
       console.error("Error:", err);
-      setError("予期せぬエラーが発生しました");
+      setError("カテゴリの取得に失敗しました");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      fetchCategories();
-    } else {
-      setCategories([]);
-      setIsLoading(false);
-    }
-  }, [user]);
+    fetchCategories();
+  }, []);
 
   const handleDelete = async (id: string) => {
     try {
-      const { error: deleteError } = await supabase
-        .from("categories")
-        .delete()
-        .eq("id", id);
-
-      if (deleteError) {
-        console.error("Error deleting category:", deleteError);
-        setError("カテゴリの削除に失敗しました");
-        return;
-      }
-
+      await db.categories.delete(id);
       await fetchCategories();
     } catch (err) {
       console.error("Error:", err);
-      setError("予期せぬエラーが発生しました");
+      setError("カテゴリの削除に失敗しました");
     }
   };
 
@@ -81,16 +54,6 @@ export default function CategoryList() {
     setSelectedCategory(category);
     setIsEditCategoryOpen(true);
   };
-
-  if (!user) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-600 dark:text-gray-400">
-          ログインしてカテゴリを管理してください
-        </p>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (

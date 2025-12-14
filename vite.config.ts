@@ -33,8 +33,7 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       "lucide-react",
-      "@supabase/supabase-js",
-      "@supabase/postgrest-js",
+      "@neondatabase/serverless",
     ],
   },
   build: {
