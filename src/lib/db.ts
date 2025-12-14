@@ -8,7 +8,7 @@ if (!databaseUrl) {
 
 export const sql = neon(databaseUrl);
 
-// Helper functions to match Supabase-like API for easier migration
+// Database helper functions
 export const db = {
   categories: {
     async findAll() {
