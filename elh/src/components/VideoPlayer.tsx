@@ -15,6 +15,7 @@ import CaptionModal from "./CaptionModal";
 
 interface VideoPlayerProps {
   videoId: string;
+  videoTitle?: string;
 }
 
 /**
@@ -41,7 +42,7 @@ const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
 
-export default function VideoPlayer({ videoId }: VideoPlayerProps) {
+export default function VideoPlayer({ videoId, videoTitle }: VideoPlayerProps) {
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -490,6 +491,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
           captions={captions}
           onCaptionClick={handleCaptionClick}
           currentTime={currentTime}
+          videoId={videoId}
+          videoTitle={videoTitle}
         />
         {selectedCaption && (
           <SaveWordDialog
@@ -529,6 +532,8 @@ export default function VideoPlayer({ videoId }: VideoPlayerProps) {
         captions={captions}
         onCaptionClick={handleCaptionClick}
         currentTime={currentTime}
+        videoId={videoId}
+        videoTitle={videoTitle}
       />
       {selectedCaption && (
         <SaveWordDialog
