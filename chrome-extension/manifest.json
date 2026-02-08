@@ -1,0 +1,81 @@
+{
+  "manifest_version": 3,
+  "name": "English Learning Hub",
+  "version": "0.1.0",
+  "description": "Enhance your English learning with study timer, word capture, and subtitle overlay",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "English Learning Hub"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/index.tsx"],
+      "css": ["src/content/content.css"]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "contextMenus",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:3001/*",
+    "http://127.0.0.1:8765/*",
+    "https://api.dictionaryapi.dev/*",
+    "https://api.mymemory.translated.net/*",
+    "https://picsum.photos/*",
+    "https://images.unsplash.com/*",
+    "https://*.youtube.com/*",
+    "https://*.netflix.com/*"
+  ],
+  "commands": {
+    "toggle-timer": {
+      "suggested_key": {
+        "default": "Alt+Shift+T",
+        "mac": "Alt+Shift+T"
+      },
+      "description": "Toggle timer display"
+    },
+    "start-timer": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Start timer"
+    },
+    "toggle-subtitles": {
+      "suggested_key": {
+        "default": "Alt+Shift+C",
+        "mac": "Alt+Shift+C"
+      },
+      "description": "Toggle subtitle overlay"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
