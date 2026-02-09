@@ -1,5 +1,6 @@
 /// <reference types="chrome" />
 
+import './content.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { TimerOverlay } from './timer/TimerOverlay';
