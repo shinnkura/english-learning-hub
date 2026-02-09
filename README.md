@@ -1,4 +1,4 @@
-# English Learning Hub - Chrome Extension
+# English Learning Hub
 
 英語学習をサポートするChrome拡張機能です。
 
@@ -61,7 +61,6 @@
 ### 1. 依存関係のインストール
 
 ```bash
-cd chrome-extension
 npm run setup
 ```
 
@@ -103,7 +102,7 @@ npm run dev
 1. Chrome で `chrome://extensions` を開く
 2. 「デベロッパーモード」を有効にする
 3. 「パッケージ化されていない拡張機能を読み込む」をクリック
-4. `chrome-extension/dist` フォルダを選択
+4. `dist` フォルダを選択
 
 ### 5. Ankiの設定
 
@@ -115,7 +114,7 @@ npm run dev
 ## ディレクトリ構造
 
 ```
-chrome-extension/
+english-learning-hub/
 ├── manifest.json           # Chrome拡張機能マニフェスト
 ├── package.json
 ├── vite.config.ts
