@@ -1,5 +1,7 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/flashcards", "destination": "/public/flashcards.html" },
+    { "source": "/youtube-learning", "destination": "/public/youtube-learning.html" }
   ]
 }
