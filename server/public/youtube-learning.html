@@ -1412,6 +1412,11 @@
     let dailyStats = {};
     let selectedDate = null;
 
+    // Timer pause state (for tab visibility)
+    let accumulatedLearningSeconds = 0;
+    let accumulatedSessionSeconds = 0;
+    let isPaused = false;
+
     // ==========================================
     // Session Persistence (localStorage)
     // ==========================================
@@ -1422,10 +1427,16 @@
         return;
       }
 
+      // Calculate current elapsed time and add to accumulated
+      const currentElapsed = isPaused ? 0 : Math.floor((new Date() - learningStartTime) / 1000);
+      const totalLearningSeconds = accumulatedLearningSeconds + currentElapsed;
+
       const session = {
         video: currentVideo,
         learningStartTime: learningStartTime.toISOString(),
         sessionStartTime: sessionStartTime ? sessionStartTime.toISOString() : null,
+        accumulatedLearningSeconds: totalLearningSeconds,
+        accumulatedSessionSeconds: accumulatedSessionSeconds + (isPaused ? 0 : Math.floor((new Date() - sessionStartTime) / 1000)),
         savedAt: new Date().toISOString()
       };
 
@@ -1448,6 +1459,8 @@
           video: session.video,
           learningStartTime: new Date(session.learningStartTime),
           sessionStartTime: session.sessionStartTime ? new Date(session.sessionStartTime) : null,
+          accumulatedLearningSeconds: session.accumulatedLearningSeconds || 0,
+          accumulatedSessionSeconds: session.accumulatedSessionSeconds || 0,
           savedAt: new Date(session.savedAt)
         };
       } catch (e) {
@@ -1468,22 +1481,15 @@
         return;
       }
 
-      const elapsed = Math.floor((new Date() - session.learningStartTime) / 1000);
+      // Use accumulated time (not wall clock time)
+      const elapsed = session.accumulatedLearningSeconds || 0;
 
       document.getElementById('resume-banner').style.display = 'block';
       document.getElementById('resume-thumbnail').src = session.video.thumbnail || '';
       document.getElementById('resume-title').textContent = session.video.title;
       document.getElementById('resume-elapsed').textContent = formatDuration(elapsed);
 
-      if (!window.resumeElapsedInterval) {
-        window.resumeElapsedInterval = setInterval(() => {
-          const s = loadSession();
-          if (s) {
-            const el = Math.floor((new Date() - s.learningStartTime) / 1000);
-            document.getElementById('resume-elapsed').textContent = formatDuration(el);
-          }
-        }, 1000);
-      }
+      // No need to update elapsed time since it's paused
     }
 
     function resumeVideo() {
@@ -1500,8 +1506,12 @@
       }
 
       currentVideo = session.video;
-      learningStartTime = session.learningStartTime;
-      sessionStartTime = session.sessionStartTime || new Date();
+      // Reset start times to now, use accumulated seconds
+      learningStartTime = new Date();
+      sessionStartTime = new Date();
+      accumulatedLearningSeconds = session.accumulatedLearningSeconds || 0;
+      accumulatedSessionSeconds = session.accumulatedSessionSeconds || 0;
+      isPaused = false;
 
       document.getElementById('resume-banner').style.display = 'none';
       document.getElementById('video-selection').style.display = 'none';
@@ -1518,7 +1528,8 @@
     function dismissResume() {
       const session = loadSession();
       if (session) {
-        const elapsed = Math.floor((new Date() - session.learningStartTime) / 1000);
+        // Use accumulated time
+        const elapsed = session.accumulatedLearningSeconds || 0;
 
         if (elapsed >= 30) {
           const data = {
@@ -1762,6 +1773,11 @@
       document.getElementById('player-view').classList.add('active');
       document.getElementById('player-title').textContent = currentVideo.title;
 
+      // Reset accumulated time for new video
+      accumulatedLearningSeconds = 0;
+      accumulatedSessionSeconds = 0;
+      isPaused = false;
+
       learningStartTime = new Date();
       startTimer();
 
@@ -1839,14 +1855,18 @@
       }
 
       timerInterval = setInterval(() => {
-        const elapsed = Math.floor((new Date() - learningStartTime) / 1000);
-        document.getElementById('learning-timer').textContent = formatDuration(elapsed);
+        if (isPaused) return;
 
-        const sessionElapsed = Math.floor((new Date() - sessionStartTime) / 1000);
-        document.getElementById('session-time').textContent = formatDuration(sessionElapsed);
+        const currentElapsed = Math.floor((new Date() - learningStartTime) / 1000);
+        const totalLearning = accumulatedLearningSeconds + currentElapsed;
+        document.getElementById('learning-timer').textContent = formatDuration(totalLearning);
+
+        const currentSessionElapsed = Math.floor((new Date() - sessionStartTime) / 1000);
+        const totalSession = accumulatedSessionSeconds + currentSessionElapsed;
+        document.getElementById('session-time').textContent = formatDuration(totalSession);
 
         // Save session every 10 seconds for persistence
-        if (elapsed % 10 === 0) {
+        if (currentElapsed % 10 === 0) {
           saveSession();
         }
       }, 1000);
@@ -1859,11 +1879,54 @@
       }
     }
 
-    function exitPlayer() {
-      const elapsed = learningStartTime ? Math.floor((new Date() - learningStartTime) / 1000) : 0;
+    function pauseTimer() {
+      if (!learningStartTime || isPaused) return;
 
-      if (elapsed >= 30) {
-        if (!confirm('You have been learning for ' + formatDuration(elapsed) + '. Exit without saving?')) {
+      // Add current elapsed to accumulated
+      const currentElapsed = Math.floor((new Date() - learningStartTime) / 1000);
+      accumulatedLearningSeconds += currentElapsed;
+
+      const currentSessionElapsed = Math.floor((new Date() - sessionStartTime) / 1000);
+      accumulatedSessionSeconds += currentSessionElapsed;
+
+      isPaused = true;
+      saveSession();
+    }
+
+    function resumeTimer() {
+      if (!isPaused) return;
+
+      // Reset start times to now
+      learningStartTime = new Date();
+      sessionStartTime = new Date();
+      isPaused = false;
+    }
+
+    // Page Visibility API - pause timer when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+      if (!currentVideo) return;
+
+      if (document.hidden) {
+        pauseTimer();
+        // Pause YouTube video
+        const iframe = document.getElementById('yt-iframe');
+        if (iframe) {
+          iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: 'pauseVideo',
+            args: []
+          }), '*');
+        }
+      } else {
+        resumeTimer();
+      }
+    });
+
+    function exitPlayer() {
+      const totalElapsed = getTotalLearningSeconds();
+
+      if (totalElapsed >= 30) {
+        if (!confirm('You have been learning for ' + formatDuration(totalElapsed) + '. Exit without saving?')) {
           return;
         }
       }
@@ -1871,11 +1934,17 @@
       resetPlayer();
     }
 
+    function getTotalLearningSeconds() {
+      if (!learningStartTime) return accumulatedLearningSeconds;
+      const currentElapsed = isPaused ? 0 : Math.floor((new Date() - learningStartTime) / 1000);
+      return accumulatedLearningSeconds + currentElapsed;
+    }
+
     async function finishLearning() {
-      if (!currentVideo || !learningStartTime) return;
+      if (!currentVideo) return;
 
       const endTime = new Date();
-      const durationSeconds = Math.floor((endTime - learningStartTime) / 1000);
+      const durationSeconds = getTotalLearningSeconds();
 
       if (durationSeconds < 30) {
         showToast('Learn for at least 30 seconds to save progress', 'error');
@@ -1894,7 +1963,7 @@
             thumbnail_url: currentVideo.thumbnail,
             duration_seconds: durationSeconds,
             video_duration_seconds: currentVideo.durationSeconds,
-            started_at: learningStartTime.toISOString(),
+            started_at: new Date(Date.now() - durationSeconds * 1000).toISOString(),
             ended_at: endTime.toISOString(),
           }),
         });
@@ -1924,6 +1993,10 @@
       currentVideo = null;
       learningStartTime = null;
       captions = [];
+      // Reset accumulated time
+      accumulatedLearningSeconds = 0;
+      accumulatedSessionSeconds = 0;
+      isPaused = false;
     }
 
     window.addEventListener('beforeunload', (e) => {
