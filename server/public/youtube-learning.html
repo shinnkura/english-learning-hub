@@ -669,8 +669,10 @@
 
     .caption-list {
       flex: 1;
-      overflow-y: auto;
+      overflow-y: scroll;
       padding: 12px;
+      height: 0;
+      min-height: 400px;
     }
 
     .caption-list::-webkit-scrollbar {
@@ -932,6 +934,95 @@
       color: var(--text-muted);
     }
 
+    /* Resume Banner */
+    .resume-banner {
+      background: linear-gradient(135deg, rgba(245, 166, 35, 0.15) 0%, rgba(245, 166, 35, 0.05) 100%);
+      border: 1px solid rgba(245, 166, 35, 0.3);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      animation: slideDown 0.4s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .resume-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .resume-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .resume-thumbnail {
+      width: 100px;
+      height: 56px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .resume-details {
+      min-width: 0;
+    }
+
+    .resume-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-gold);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .resume-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .resume-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .resume-time {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent-gold);
+      font-weight: 500;
+    }
+
+    .resume-actions {
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 640px) {
+      .resume-content {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .resume-actions {
+        justify-content: flex-end;
+      }
+    }
+
     /* Empty State */
     .empty-state {
       text-align: center;
@@ -1146,6 +1237,29 @@
           </div>
         </div>
 
+        <!-- Resume Session Banner -->
+        <div class="resume-banner" id="resume-banner" style="display: none;">
+          <div class="resume-content">
+            <div class="resume-info">
+              <img class="resume-thumbnail" id="resume-thumbnail" src="" alt="">
+              <div class="resume-details">
+                <div class="resume-label">Continue watching</div>
+                <div class="resume-title" id="resume-title"></div>
+                <div class="resume-meta">
+                  <span class="resume-time" id="resume-elapsed"></span> elapsed
+                </div>
+              </div>
+            </div>
+            <div class="resume-actions">
+              <button class="btn btn-secondary" onclick="dismissResume()">Dismiss</button>
+              <button class="btn btn-primary" onclick="resumeVideo()">
+                <span>▶</span>
+                Resume
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Video Selection -->
         <div id="video-selection">
           <div class="section-header">
@@ -1259,6 +1373,7 @@
 
   <script>
     const API_BASE = '';
+    const STORAGE_KEY = 'ytlearning_session';
     let currentTab = 'learn';
     let videos = [];
     let currentVideo = null;
@@ -1271,6 +1386,148 @@
     let currentMonth = new Date();
     let dailyStats = {};
     let selectedDate = null;
+
+    // ==========================================
+    // Session Persistence (localStorage)
+    // ==========================================
+
+    function saveSession() {
+      if (!currentVideo || !learningStartTime) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+
+      const session = {
+        video: currentVideo,
+        learningStartTime: learningStartTime.toISOString(),
+        sessionStartTime: sessionStartTime ? sessionStartTime.toISOString() : null,
+        savedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    }
+
+    function loadSession() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (!data) return null;
+
+        const session = JSON.parse(data);
+
+        if (!session.video || !session.learningStartTime) {
+          localStorage.removeItem(STORAGE_KEY);
+          return null;
+        }
+
+        return {
+          video: session.video,
+          learningStartTime: new Date(session.learningStartTime),
+          sessionStartTime: session.sessionStartTime ? new Date(session.sessionStartTime) : null,
+          savedAt: new Date(session.savedAt)
+        };
+      } catch (e) {
+        console.error('Error loading session:', e);
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+    }
+
+    function clearSession() {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    function checkForResumableSession() {
+      const session = loadSession();
+      if (!session) {
+        document.getElementById('resume-banner').style.display = 'none';
+        return;
+      }
+
+      const elapsed = Math.floor((new Date() - session.learningStartTime) / 1000);
+
+      document.getElementById('resume-banner').style.display = 'block';
+      document.getElementById('resume-thumbnail').src = session.video.thumbnail || '';
+      document.getElementById('resume-title').textContent = session.video.title;
+      document.getElementById('resume-elapsed').textContent = formatDuration(elapsed);
+
+      if (!window.resumeElapsedInterval) {
+        window.resumeElapsedInterval = setInterval(() => {
+          const s = loadSession();
+          if (s) {
+            const el = Math.floor((new Date() - s.learningStartTime) / 1000);
+            document.getElementById('resume-elapsed').textContent = formatDuration(el);
+          }
+        }, 1000);
+      }
+    }
+
+    function resumeVideo() {
+      const session = loadSession();
+      if (!session) {
+        showToast('Session expired', 'error');
+        document.getElementById('resume-banner').style.display = 'none';
+        return;
+      }
+
+      if (window.resumeElapsedInterval) {
+        clearInterval(window.resumeElapsedInterval);
+        window.resumeElapsedInterval = null;
+      }
+
+      currentVideo = session.video;
+      learningStartTime = session.learningStartTime;
+      sessionStartTime = session.sessionStartTime || new Date();
+
+      document.getElementById('resume-banner').style.display = 'none';
+      document.getElementById('video-selection').style.display = 'none';
+      document.getElementById('player-view').classList.add('active');
+      document.getElementById('player-title').textContent = currentVideo.title;
+
+      startTimer();
+      loadYouTubePlayer(currentVideo.videoId);
+      loadCaptions(currentVideo.videoId);
+
+      showToast('Session resumed!');
+    }
+
+    function dismissResume() {
+      const session = loadSession();
+      if (session) {
+        const elapsed = Math.floor((new Date() - session.learningStartTime) / 1000);
+
+        if (elapsed >= 30) {
+          const data = {
+            video_id: session.video.videoId,
+            video_title: session.video.title,
+            channel_id: session.video.channelId,
+            channel_name: session.video.channelName,
+            thumbnail_url: session.video.thumbnail,
+            duration_seconds: elapsed,
+            video_duration_seconds: session.video.durationSeconds,
+            started_at: session.learningStartTime.toISOString(),
+            ended_at: new Date().toISOString(),
+          };
+
+          fetch(`${API_BASE}/api/youtube/learning-logs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          }).then(() => {
+            showToast(`Auto-saved ${formatDuration(elapsed)} of learning`);
+            loadTodayStats();
+          }).catch(console.error);
+        }
+      }
+
+      clearSession();
+
+      if (window.resumeElapsedInterval) {
+        clearInterval(window.resumeElapsedInterval);
+        window.resumeElapsedInterval = null;
+      }
+
+      document.getElementById('resume-banner').style.display = 'none';
+    }
 
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1469,12 +1726,22 @@
       currentVideo = videos.find(v => v.videoId === videoId);
       if (!currentVideo) return;
 
+      // Hide resume banner if visible
+      if (window.resumeElapsedInterval) {
+        clearInterval(window.resumeElapsedInterval);
+        window.resumeElapsedInterval = null;
+      }
+      document.getElementById('resume-banner').style.display = 'none';
+
       document.getElementById('video-selection').style.display = 'none';
       document.getElementById('player-view').classList.add('active');
       document.getElementById('player-title').textContent = currentVideo.title;
 
       learningStartTime = new Date();
       startTimer();
+
+      // Save session to localStorage
+      saveSession();
 
       loadYouTubePlayer(videoId);
       loadCaptions(videoId);
@@ -1552,6 +1819,11 @@
 
         const sessionElapsed = Math.floor((new Date() - sessionStartTime) / 1000);
         document.getElementById('session-time').textContent = formatDuration(sessionElapsed);
+
+        // Save session every 10 seconds for persistence
+        if (elapsed % 10 === 0) {
+          saveSession();
+        }
       }, 1000);
     }
 
@@ -1619,6 +1891,7 @@
 
     function resetPlayer() {
       stopTimer();
+      clearSession(); // Clear localStorage session
       document.getElementById('player-view').classList.remove('active');
       document.getElementById('video-selection').style.display = 'block';
       document.getElementById('youtube-player').innerHTML = '';
@@ -1629,23 +1902,9 @@
     }
 
     window.addEventListener('beforeunload', (e) => {
+      // Save session state before unload (for resume on reload)
       if (currentVideo && learningStartTime) {
-        const durationSeconds = Math.floor((new Date() - learningStartTime) / 1000);
-        if (durationSeconds >= 30) {
-          const data = JSON.stringify({
-            video_id: currentVideo.videoId,
-            video_title: currentVideo.title,
-            channel_id: currentVideo.channelId,
-            channel_name: currentVideo.channelName,
-            thumbnail_url: currentVideo.thumbnail,
-            duration_seconds: durationSeconds,
-            video_duration_seconds: currentVideo.durationSeconds,
-            started_at: learningStartTime.toISOString(),
-            ended_at: new Date().toISOString(),
-          });
-
-          navigator.sendBeacon(`${API_BASE}/api/youtube/learning-logs`, new Blob([data], { type: 'application/json' }));
-        }
+        saveSession();
       }
     });
 
@@ -1808,6 +2067,7 @@
 
     // Initialize
     loadVideos();
+    checkForResumableSession();
   </script>
 </body>
 </html>
