@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Learning - English Learning Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0c0f1a;
+      --bg-secondary: #151929;
+      --bg-card: rgba(26, 32, 53, 0.7);
+      --bg-glass: rgba(255, 255, 255, 0.03);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-accent: rgba(255, 255, 255, 0.1);
+      --text-primary: #f0f2f7;
+      --text-secondary: #8b92a8;
+      --text-muted: #5a6278;
+      --accent-gold: #f5a623;
+      --accent-gold-soft: rgba(245, 166, 35, 0.15);
+      --accent-gold-glow: rgba(245, 166, 35, 0.4);
+      --accent-teal: #2dd4bf;
+      --accent-teal-soft: rgba(45, 212, 191, 0.15);
+      --success: #22c55e;
+      --success-soft: rgba(34, 197, 94, 0.15);
+      --error: #ef4444;
+      --error-soft: rgba(239, 68, 68, 0.15);
+      --gradient-accent: linear-gradient(135deg, #f5a623 0%, #e8930c 100%);
+      --gradient-teal: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 40px rgba(245, 166, 35, 0.15);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(245, 166, 35, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(45, 212, 191, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 50% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Noise texture overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.015;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(12px);
+      background: rgba(12, 15, 26, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--gradient-accent);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+
+    /* Navigation Tabs */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 6px;
+      background: var(--bg-glass);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .tab-btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-glass);
+    }
+
+    .tab-btn.active {
+      background: var(--bg-card);
+      color: var(--accent-gold);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 2px;
+      background: var(--accent-gold);
+      border-radius: 1px;
+    }
+
+    /* Main Content */
+    .content {
+      flex: 1;
+      padding: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-accent);
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent-gold-soft);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Form Elements */
+    .input-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 14px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .input-field::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input-field:focus {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 3px var(--accent-gold-soft);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 14px 24px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--gradient-accent);
+      color: #0c0f1a;
+      box-shadow: var(--shadow-sm), 0 0 20px rgba(245, 166, 35, 0.2);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md), 0 0 30px rgba(245, 166, 35, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border-color: var(--border-accent);
+    }
+
+    .btn-danger {
+      background: var(--error-soft);
+      color: var(--error);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Channel List */
+    .channel-list {
+      margin-top: 20px;
+    }
+
+    .channel-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      transition: background 0.2s ease;
+    }
+
+    .channel-item:hover {
+      background: var(--bg-glass);
+    }
+
+    .channel-item + .channel-item {
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .channel-thumbnail {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border-subtle);
+    }
+
+    .channel-info {
+      flex: 1;
+    }
+
+    .channel-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .channel-stats {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      flex: 1;
+      min-width: 140px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      backdrop-filter: blur(20px);
+    }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--accent-gold-soft);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card:nth-child(2) .stat-icon {
+      background: var(--accent-teal-soft);
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+
+    /* Video Grid */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .video-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(20px);
+    }
+
+    .video-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-gold);
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
+    }
+
+    .video-thumbnail-wrapper {
+      position: relative;
+      padding-top: 56.25%;
+      overflow: hidden;
+    }
+
+    .video-thumbnail {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .video-card:hover .video-thumbnail {
+      transform: scale(1.05);
+    }
+
+    .video-duration {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      backdrop-filter: blur(4px);
+    }
+
+    .video-play-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      width: 64px;
+      height: 64px;
+      background: var(--gradient-accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .video-card:hover .video-play-btn {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .video-info {
+      padding: 16px;
+    }
+
+    .video-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+
+    .video-channel {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Player View */
+    .player-view {
+      display: none;
+    }
+
+    .player-view.active {
+      display: block;
+      animation: slideUp 0.4s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .player-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+    }
+
+    .player-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .player-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      max-width: 60%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-timer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--success-soft);
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+    }
+
+    .timer-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .timer-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--success);
+    }
+
+    .player-container {
+      display: flex;
+      gap: 0;
+    }
+
+    .video-wrapper {
+      flex: 1;
+      position: relative;
+      padding-top: 56.25%;
+      background: #000;
+    }
+
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .caption-panel {
+      width: 380px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      height: 500px;
+      overflow: hidden;
+    }
+
+    .caption-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .caption-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .caption-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .caption-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .caption-list::-webkit-scrollbar-thumb {
+      background: var(--border-accent);
+      border-radius: 3px;
+    }
+
+    .caption-item {
+      padding: 12px 14px;
+      margin-bottom: 6px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .caption-item:hover {
+      background: var(--bg-glass);
+      border-color: var(--border-subtle);
+    }
+
+    .caption-item.active {
+      background: var(--accent-gold-soft);
+      border-color: rgba(245, 166, 35, 0.3);
+    }
+
+    .caption-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .caption-text {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .player-actions {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* History Tab */
+    .history-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .history-left {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Stats Summary */
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .summary-stat {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+    }
+
+    .summary-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--accent-gold);
+    }
+
+    .summary-stat:nth-child(2) .summary-stat-value {
+      color: var(--accent-teal);
+    }
+
+    .summary-stat:nth-child(3) .summary-stat-value {
+      color: var(--text-primary);
+    }
+
+    .summary-stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+
+    /* Calendar */
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .calendar-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .calendar-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .calendar-nav button {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-glass);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 16px;
+    }
+
+    .calendar-nav button:hover {
+      background: var(--bg-card);
+      border-color: var(--border-accent);
+      color: var(--text-primary);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .calendar-day-header {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 8px 0;
+      text-transform: uppercase;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .calendar-day:hover {
+      background: var(--bg-glass);
+      border-color: var(--border-subtle);
+    }
+
+    .calendar-day.other-month {
+      color: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    .calendar-day.has-activity {
+      background: var(--accent-gold-soft);
+      color: var(--accent-gold);
+      font-weight: 600;
+    }
+
+    .calendar-day.selected {
+      background: var(--gradient-accent);
+      color: #0c0f1a;
+      font-weight: 700;
+      border-color: var(--accent-gold);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .calendar-day-minutes {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      margin-top: 2px;
+    }
+
+    .calendar-day.selected .calendar-day-minutes {
+      color: rgba(12, 15, 26, 0.7);
+    }
+
+    /* History Detail */
+    .history-detail-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+    }
+
+    .history-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      transition: background 0.2s ease;
+    }
+
+    .history-item:hover {
+      background: var(--bg-glass);
+    }
+
+    .history-item + .history-item {
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .history-item-thumbnail {
+      width: 110px;
+      height: 62px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      background: var(--bg-secondary);
+    }
+
+    .history-item-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .history-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .history-item-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 80px 32px;
+    }
+
+    .empty-state-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 24px;
+    }
+
+    .empty-state-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .empty-state-message {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 48px;
+      color: var(--text-muted);
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border-subtle);
+      border-top-color: var(--accent-gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 12px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      padding: 16px 24px;
+      border-radius: var(--radius-md);
+      color: white;
+      font-weight: 500;
+      font-size: 14px;
+      z-index: 1000;
+      backdrop-filter: blur(12px);
+      animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast.success {
+      background: rgba(34, 197, 94, 0.95);
+    }
+
+    .toast.error {
+      background: rgba(239, 68, 68, 0.95);
+    }
+
+    @keyframes toastIn {
+      from {
+        transform: translateX(100%) scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .history-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px 20px;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .player-container {
+        flex-direction: column;
+      }
+
+      .caption-panel {
+        width: 100%;
+        max-height: 280px;
+      }
+
+      .video-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-bar {
+        flex-direction: column;
+      }
+
+      .stat-card {
+        min-width: unset;
+      }
+
+      .stats-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .input-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">📺</div>
+        <div class="logo-text">
+          <span class="logo-title">YouTube Learning</span>
+          <span class="logo-subtitle">English Learning Hub</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn" data-tab="channels">Channels</button>
+        <button class="tab-btn active" data-tab="learn">Learn</button>
+        <button class="tab-btn" data-tab="history">History</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Channels Tab -->
+      <div class="tab-content" id="channels-tab">
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-title-icon">➕</div>
+              Register Channel
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="input-group">
+              <input type="text" class="input-field" id="channel-input" placeholder="Enter YouTube URL or @handle (e.g., @TED)">
+              <button class="btn btn-primary" onclick="registerChannel()">
+                <span>Register</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-title-icon">📋</div>
+              Registered Channels
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="channel-list-container">
+              <div class="loading">Loading channels</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Learn Tab -->
+      <div class="tab-content active" id="learn-tab">
+        <div class="stats-bar">
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-value" id="session-time">00:00</div>
+            <div class="stat-label">Session</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value"><span id="today-time">0</span><span style="font-size: 14px; color: var(--text-muted); margin-left: 4px;">min</span></div>
+            <div class="stat-label">Today</div>
+          </div>
+        </div>
+
+        <!-- Video Selection -->
+        <div id="video-selection">
+          <div class="section-header">
+            <h2 class="section-title">Select a video to start learning</h2>
+            <button class="btn btn-secondary" onclick="refreshVideos()">
+              <span>↻</span>
+              Refresh
+            </button>
+          </div>
+          <div class="video-grid" id="video-grid">
+            <div class="loading">Loading videos</div>
+          </div>
+        </div>
+
+        <!-- Player View -->
+        <div class="player-view" id="player-view">
+          <div class="player-card">
+            <div class="player-header">
+              <span class="player-title" id="player-title">Video Title</span>
+              <div class="player-timer">
+                <div class="timer-dot"></div>
+                <span class="timer-value" id="learning-timer">00:00</span>
+              </div>
+            </div>
+            <div class="player-container">
+              <div class="video-wrapper">
+                <div id="youtube-player"></div>
+              </div>
+              <div class="caption-panel">
+                <div class="caption-header">
+                  <span>💬</span>
+                  Captions
+                </div>
+                <div class="caption-list" id="caption-list">
+                  <div class="loading" style="color: var(--text-muted); font-size: 14px;">Loading captions</div>
+                </div>
+              </div>
+            </div>
+            <div class="player-actions">
+              <button class="btn btn-secondary" onclick="exitPlayer()">
+                <span>←</span>
+                Exit
+              </button>
+              <button class="btn btn-primary" onclick="finishLearning()">
+                <span>✓</span>
+                Finish & Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Tab -->
+      <div class="tab-content" id="history-tab">
+        <div class="history-grid">
+          <div class="history-left">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <div class="card-title-icon">📈</div>
+                  Statistics
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="stats-summary">
+                  <div class="summary-stat">
+                    <div class="summary-stat-value" id="total-hours">0</div>
+                    <div class="summary-stat-label">Hours</div>
+                  </div>
+                  <div class="summary-stat">
+                    <div class="summary-stat-value" id="total-sessions">0</div>
+                    <div class="summary-stat-label">Sessions</div>
+                  </div>
+                  <div class="summary-stat">
+                    <div class="summary-stat-value" id="unique-videos">0</div>
+                    <div class="summary-stat-label">Videos</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="calendar-header" style="width: 100%; margin: 0;">
+                  <span class="calendar-title" id="calendar-title">January 2024</span>
+                  <div class="calendar-nav">
+                    <button onclick="prevMonth()">‹</button>
+                    <button onclick="nextMonth()">›</button>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="calendar-grid" id="calendar-grid"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div class="card-title-icon">📝</div>
+                <span id="history-detail-title">Select a date to view details</span>
+              </div>
+            </div>
+            <div class="card-body" id="history-detail-container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    let currentTab = 'learn';
+    let videos = [];
+    let currentVideo = null;
+    let learningStartTime = null;
+    let sessionStartTime = null;
+    let timerInterval = null;
+    let captions = [];
+    let player = null;
+    let playerReady = false;
+    let currentMonth = new Date();
+    let dailyStats = {};
+    let selectedDate = null;
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        switchTab(tab);
+      });
+    });
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById(`${tab}-tab`).classList.add('active');
+
+      if (tab === 'channels') loadChannels();
+      if (tab === 'learn') loadVideos();
+      if (tab === 'history') loadHistory();
+    }
+
+    // Toast notification
+    function showToast(message, type = 'success') {
+      const icon = type === 'success' ? '✓' : '✕';
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span>${icon}</span> ${message}`;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = 'toastIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ==========================================
+    // Channels Tab
+    // ==========================================
+
+    async function loadChannels() {
+      const container = document.getElementById('channel-list-container');
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/channels`);
+        const data = await response.json();
+
+        if (!data.data || data.data.length === 0) {
+          container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📺</div><div class="empty-state-title">No channels yet</div><div class="empty-state-message">Register a channel to start watching videos</div></div>';
+          return;
+        }
+
+        container.innerHTML = '<div class="channel-list">' + data.data.map(channel => `
+          <div class="channel-item">
+            <img class="channel-thumbnail" src="${escapeHtml(channel.thumbnail_url || '')}" alt="${escapeHtml(channel.channel_name)}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23151929%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%235a6278%22 font-size=%2240%22>?</text></svg>'">
+            <div class="channel-info">
+              <div class="channel-name">${escapeHtml(channel.channel_name)}</div>
+              <div class="channel-stats">
+                ${formatNumber(channel.subscriber_count)} subscribers · ${formatNumber(channel.video_count)} videos
+              </div>
+            </div>
+            <button class="btn btn-danger btn-icon" onclick="deleteChannel(${channel.id})" title="Delete">✕</button>
+          </div>
+        `).join('') + '</div>';
+      } catch (error) {
+        console.error('Error loading channels:', error);
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-message">Failed to load channels</div></div>';
+      }
+    }
+
+    async function registerChannel() {
+      const input = document.getElementById('channel-input');
+      const identifier = input.value.trim();
+
+      if (!identifier) {
+        showToast('Please enter a channel URL or @handle', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/channels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelIdentifier: identifier }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast('Channel registered successfully!');
+          input.value = '';
+          loadChannels();
+          await fetch(`${API_BASE}/api/youtube/videos/refresh`, { method: 'POST' });
+        } else {
+          showToast(data.error || 'Failed to register channel', 'error');
+        }
+      } catch (error) {
+        console.error('Error registering channel:', error);
+        showToast('Failed to register channel', 'error');
+      }
+    }
+
+    async function deleteChannel(id) {
+      if (!confirm('Are you sure you want to remove this channel?')) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/channels/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          showToast('Channel removed');
+          loadChannels();
+          await fetch(`${API_BASE}/api/youtube/videos/refresh`, { method: 'POST' });
+        } else {
+          showToast('Failed to remove channel', 'error');
+        }
+      } catch (error) {
+        console.error('Error deleting channel:', error);
+        showToast('Failed to remove channel', 'error');
+      }
+    }
+
+    // ==========================================
+    // Learn Tab
+    // ==========================================
+
+    async function loadVideos() {
+      const grid = document.getElementById('video-grid');
+
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/videos?limit=10`);
+        const data = await response.json();
+
+        if (!data.data || data.data.length === 0) {
+          grid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+              <div class="empty-state-icon">📺</div>
+              <div class="empty-state-title">No videos available</div>
+              <div class="empty-state-message">Register some channels first to see videos here</div>
+              <button class="btn btn-primary" onclick="switchTab('channels')">Add Channels</button>
+            </div>
+          `;
+          return;
+        }
+
+        videos = data.data;
+        grid.innerHTML = videos.map(video => `
+          <div class="video-card" onclick="selectVideo('${video.videoId}')">
+            <div class="video-thumbnail-wrapper">
+              <img class="video-thumbnail" src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}">
+              <span class="video-duration">${video.duration}</span>
+              <div class="video-play-btn">▶</div>
+            </div>
+            <div class="video-info">
+              <div class="video-title">${escapeHtml(video.title)}</div>
+              <div class="video-channel">${escapeHtml(video.channelName)}</div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading videos:', error);
+        grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-state-icon">⚠️</div><div class="empty-state-message">Failed to load videos</div></div>';
+      }
+
+      loadTodayStats();
+    }
+
+    async function refreshVideos() {
+      const grid = document.getElementById('video-grid');
+      grid.innerHTML = '<div class="loading">Refreshing videos</div>';
+
+      try {
+        await fetch(`${API_BASE}/api/youtube/videos/refresh`, { method: 'POST' });
+        await loadVideos();
+        showToast('Videos refreshed');
+      } catch (error) {
+        console.error('Error refreshing videos:', error);
+        showToast('Failed to refresh videos', 'error');
+      }
+    }
+
+    async function loadTodayStats() {
+      try {
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+        const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs/stats?start_date=${startDate}&end_date=${endDate}`);
+        const data = await response.json();
+
+        document.getElementById('today-time').textContent = data.totalMinutes || 0;
+      } catch (error) {
+        console.error('Error loading today stats:', error);
+      }
+    }
+
+    function selectVideo(videoId) {
+      currentVideo = videos.find(v => v.videoId === videoId);
+      if (!currentVideo) return;
+
+      document.getElementById('video-selection').style.display = 'none';
+      document.getElementById('player-view').classList.add('active');
+      document.getElementById('player-title').textContent = currentVideo.title;
+
+      learningStartTime = new Date();
+      startTimer();
+
+      loadYouTubePlayer(videoId);
+      loadCaptions(videoId);
+    }
+
+    function loadYouTubePlayer(videoId) {
+      const container = document.getElementById('youtube-player');
+
+      if (player) {
+        player.loadVideoById(videoId);
+        return;
+      }
+
+      container.innerHTML = `
+        <iframe
+          id="yt-iframe"
+          src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+        ></iframe>
+      `;
+    }
+
+    async function loadCaptions(videoId) {
+      const container = document.getElementById('caption-list');
+
+      try {
+        const response = await fetch(`${API_BASE}/api/captions/${videoId}`);
+        const data = await response.json();
+
+        if (data.captions && data.captions.length > 0) {
+          captions = data.captions;
+          renderCaptions();
+        } else {
+          container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-muted);">No captions available</div>';
+        }
+      } catch (error) {
+        console.error('Error loading captions:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--error);">Failed to load captions</div>';
+      }
+    }
+
+    function renderCaptions() {
+      const container = document.getElementById('caption-list');
+
+      container.innerHTML = captions.map((caption, index) => `
+        <div class="caption-item" data-index="${index}" onclick="seekToCaption(${caption.start})">
+          <div class="caption-time">${formatTime(caption.start)}</div>
+          <div class="caption-text">${escapeHtml(caption.text)}</div>
+        </div>
+      `).join('');
+    }
+
+    function seekToCaption(time) {
+      const iframe = document.getElementById('yt-iframe');
+      if (iframe) {
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'seekTo',
+          args: [time, true]
+        }), '*');
+      }
+    }
+
+    function startTimer() {
+      if (!sessionStartTime) {
+        sessionStartTime = new Date();
+      }
+
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((new Date() - learningStartTime) / 1000);
+        document.getElementById('learning-timer').textContent = formatDuration(elapsed);
+
+        const sessionElapsed = Math.floor((new Date() - sessionStartTime) / 1000);
+        document.getElementById('session-time').textContent = formatDuration(sessionElapsed);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function exitPlayer() {
+      const elapsed = learningStartTime ? Math.floor((new Date() - learningStartTime) / 1000) : 0;
+
+      if (elapsed >= 30) {
+        if (!confirm('You have been learning for ' + formatDuration(elapsed) + '. Exit without saving?')) {
+          return;
+        }
+      }
+
+      resetPlayer();
+    }
+
+    async function finishLearning() {
+      if (!currentVideo || !learningStartTime) return;
+
+      const endTime = new Date();
+      const durationSeconds = Math.floor((endTime - learningStartTime) / 1000);
+
+      if (durationSeconds < 30) {
+        showToast('Learn for at least 30 seconds to save progress', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            video_id: currentVideo.videoId,
+            video_title: currentVideo.title,
+            channel_id: currentVideo.channelId,
+            channel_name: currentVideo.channelName,
+            thumbnail_url: currentVideo.thumbnail,
+            duration_seconds: durationSeconds,
+            video_duration_seconds: currentVideo.durationSeconds,
+            started_at: learningStartTime.toISOString(),
+            ended_at: endTime.toISOString(),
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast(`Saved ${formatDuration(durationSeconds)} of learning!`);
+          resetPlayer();
+          loadTodayStats();
+        } else {
+          showToast(data.error || 'Failed to save learning log', 'error');
+        }
+      } catch (error) {
+        console.error('Error saving learning log:', error);
+        showToast('Failed to save learning log', 'error');
+      }
+    }
+
+    function resetPlayer() {
+      stopTimer();
+      document.getElementById('player-view').classList.remove('active');
+      document.getElementById('video-selection').style.display = 'block';
+      document.getElementById('youtube-player').innerHTML = '';
+      document.getElementById('caption-list').innerHTML = '';
+      currentVideo = null;
+      learningStartTime = null;
+      captions = [];
+    }
+
+    window.addEventListener('beforeunload', (e) => {
+      if (currentVideo && learningStartTime) {
+        const durationSeconds = Math.floor((new Date() - learningStartTime) / 1000);
+        if (durationSeconds >= 30) {
+          const data = JSON.stringify({
+            video_id: currentVideo.videoId,
+            video_title: currentVideo.title,
+            channel_id: currentVideo.channelId,
+            channel_name: currentVideo.channelName,
+            thumbnail_url: currentVideo.thumbnail,
+            duration_seconds: durationSeconds,
+            video_duration_seconds: currentVideo.durationSeconds,
+            started_at: learningStartTime.toISOString(),
+            ended_at: new Date().toISOString(),
+          });
+
+          navigator.sendBeacon(`${API_BASE}/api/youtube/learning-logs`, new Blob([data], { type: 'application/json' }));
+        }
+      }
+    });
+
+    // ==========================================
+    // History Tab
+    // ==========================================
+
+    async function loadHistory() {
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs/stats`);
+        const data = await response.json();
+
+        document.getElementById('total-hours').textContent = data.totalHours || 0;
+        document.getElementById('total-sessions').textContent = data.sessionCount || 0;
+        document.getElementById('unique-videos').textContent = data.uniqueVideos || 0;
+
+        dailyStats = {};
+        if (data.dailyStats) {
+          data.dailyStats.forEach(stat => {
+            dailyStats[stat.date] = stat;
+          });
+        }
+
+        renderCalendar();
+      } catch (error) {
+        console.error('Error loading history:', error);
+      }
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      const title = document.getElementById('calendar-title');
+
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+
+      title.textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      let html = days.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+
+      for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="calendar-day other-month">${daysInPrevMonth - i}</div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const stat = dailyStats[dateStr];
+        const hasActivity = !!stat;
+        const isSelected = selectedDate === dateStr;
+        const minutes = stat ? Math.round(stat.totalSeconds / 60) : 0;
+
+        html += `
+          <div class="calendar-day ${hasActivity ? 'has-activity' : ''} ${isSelected ? 'selected' : ''}" onclick="selectDate('${dateStr}')">
+            ${day}
+            ${hasActivity ? `<div class="calendar-day-minutes">${minutes}m</div>` : ''}
+          </div>
+        `;
+      }
+
+      const totalCells = firstDay + daysInMonth;
+      const remainingCells = 7 - (totalCells % 7);
+      if (remainingCells < 7) {
+        for (let i = 1; i <= remainingCells; i++) {
+          html += `<div class="calendar-day other-month">${i}</div>`;
+        }
+      }
+
+      grid.innerHTML = html;
+    }
+
+    function prevMonth() {
+      currentMonth.setMonth(currentMonth.getMonth() - 1);
+      renderCalendar();
+    }
+
+    function nextMonth() {
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+      renderCalendar();
+    }
+
+    async function selectDate(dateStr) {
+      selectedDate = dateStr;
+      renderCalendar();
+
+      const container = document.getElementById('history-detail-container');
+      const title = document.getElementById('history-detail-title');
+
+      const displayDate = new Date(dateStr + 'T00:00:00');
+      title.textContent = displayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+      try {
+        const startDate = dateStr + 'T00:00:00+09:00';
+        const endDate = dateStr + 'T23:59:59+09:00';
+
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs?start_date=${startDate}&end_date=${endDate}`);
+        const data = await response.json();
+
+        if (!data.data || data.data.length === 0) {
+          container.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--text-muted);">No learning sessions on this day</div>';
+          return;
+        }
+
+        container.innerHTML = data.data.map(log => `
+          <div class="history-item">
+            <img class="history-item-thumbnail" src="${escapeHtml(log.thumbnail_url || '')}" alt="" onerror="this.style.display='none'">
+            <div class="history-item-info">
+              <div class="history-item-title">${escapeHtml(log.video_title)}</div>
+              <div class="history-item-meta">
+                ${escapeHtml(log.channel_name || '')} · ${formatDuration(log.duration_seconds)} learned
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading day details:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--error);">Failed to load details</div>';
+      }
+    }
+
+    // ==========================================
+    // Utility Functions
+    // ==========================================
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatNumber(num) {
+      if (!num) return '0';
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function formatDuration(seconds) {
+      const hours = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+
+      if (hours > 0) {
+        return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Initialize
+    loadVideos();
+  </script>
+</body>
+</html>
