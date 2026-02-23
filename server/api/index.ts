@@ -13,7 +13,111 @@ import rateLimit from 'express-rate-limit';
 import { neon } from '@neondatabase/serverless';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getSubtitles } from 'youtube-captions-scraper';
+// Helper function to fetch YouTube captions using timedtext XML API
+async function fetchYouTubeCaptions(videoId: string, lang: string): Promise<Array<{ start: number; duration: number; end: number; text: string }>> {
+  // Fetch the YouTube video page to extract caption track URL
+  const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+  });
+
+  if (!videoPageResponse.ok) {
+    throw new Error(`Failed to fetch video page: ${videoPageResponse.status}`);
+  }
+
+  const html = await videoPageResponse.text();
+
+  // More robust regex patterns to capture caption tracks
+  const captionTracksMatch = html.match(/"captionTracks":(\[.*?\]),"audioTracks"/s) ||
+                              html.match(/"captionTracks":(\[.*?\]),"translationLanguages"/s) ||
+                              html.match(/"captionTracks":\s*(\[[^\]]+\])/);
+  if (!captionTracksMatch) {
+    console.error('No captionTracks found in HTML. HTML length:', html.length);
+    throw new Error('No captions found for this video');
+  }
+
+  // Parse caption tracks (handle unicode escapes)
+  const captionTracksJson = captionTracksMatch[1].replace(/\\u0026/g, '&');
+  let captionTracks;
+  try {
+    captionTracks = JSON.parse(captionTracksJson);
+  } catch (e) {
+    console.error('Failed to parse caption tracks JSON:', captionTracksJson.substring(0, 200));
+    throw new Error('Failed to parse caption data');
+  }
+
+  // Find the requested language track
+  let track = captionTracks.find((t: any) => t.languageCode === lang);
+  if (!track) {
+    track = captionTracks[0];
+    if (!track) {
+      throw new Error('No captions found for this video');
+    }
+  }
+
+  // Try fetching with XML format first (more reliable server-side)
+  const captionUrl = track.baseUrl;
+  console.log('Fetching captions from:', captionUrl.substring(0, 100));
+
+  const captionResponse = await fetch(captionUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+    },
+  });
+
+  if (!captionResponse.ok) {
+    throw new Error(`Failed to fetch captions: ${captionResponse.status}`);
+  }
+
+  const xmlText = await captionResponse.text();
+  console.log('Caption response length:', xmlText.length);
+
+  if (xmlText.length === 0) {
+    throw new Error('Empty caption response from YouTube');
+  }
+
+  // Parse XML format (default timedtext format)
+  const captions: Array<{ start: number; duration: number; end: number; text: string }> = [];
+
+  // Parse XML: <text start="0.48" dur="4.799">caption text</text>
+  const textRegex = /<text start="([\d.]+)" dur="([\d.]+)"[^>]*>(.*?)<\/text>/gs;
+  let match;
+
+  while ((match = textRegex.exec(xmlText)) !== null) {
+    const start = parseFloat(match[1]);
+    const duration = parseFloat(match[2]);
+    // Decode HTML entities and clean up text
+    let text = match[3]
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\n/g, ' ')
+      .trim();
+
+    if (text) {
+      captions.push({
+        start,
+        duration,
+        end: start + duration,
+        text,
+      });
+    }
+  }
+
+  if (captions.length === 0) {
+    console.error('No captions parsed from XML. First 500 chars:', xmlText.substring(0, 500));
+    throw new Error('No captions found');
+  }
+
+  console.log('Successfully parsed', captions.length, 'captions');
+  return captions;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -322,7 +426,7 @@ app.get('/api/cambridge-dictionary', async (req, res) => {
   }
 });
 
-// YouTube Captions API (using youtube-captions-scraper for serverless)
+// YouTube Captions API (direct fetch from YouTube)
 app.get('/api/captions/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -349,22 +453,7 @@ app.get('/api/captions/:videoId', async (req, res) => {
     }
 
     try {
-      const subtitles = await getSubtitles({
-        videoID: videoId,
-        lang: lang as string,
-      });
-
-      if (!subtitles || subtitles.length === 0) {
-        throw new Error('No captions found');
-      }
-
-      // Convert to standard format
-      const captions = subtitles.map((sub: { start: string; dur: string; text: string }) => ({
-        start: parseFloat(sub.start),
-        duration: parseFloat(sub.dur),
-        end: parseFloat(sub.start) + parseFloat(sub.dur),
-        text: sub.text,
-      }));
+      const captions = await fetchYouTubeCaptions(videoId, lang as string);
 
       const response = { captions, languageCode: lang as string };
       await cache.set(cacheKey, response);
@@ -372,7 +461,7 @@ app.get('/api/captions/:videoId', async (req, res) => {
     } catch (error: any) {
       console.error('Error fetching captions:', error.message);
 
-      if (error.message?.includes('No captions found') || error.message?.includes('Could not find')) {
+      if (error.message?.includes('No captions found')) {
         await errorCache.set(videoId, true);
         return res.status(404).json({
           error: 'Captions not available for this video.',
