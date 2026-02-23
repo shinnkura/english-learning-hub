@@ -13,6 +13,7 @@ import rateLimit from 'express-rate-limit';
 import { neon } from '@neondatabase/serverless';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getSubtitles } from 'youtube-captions-scraper';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,7 +57,7 @@ app.get('/api/health', (_req, res) => {
 app.get('/', (_req, res) => {
   res.json({
     message: 'English Learning Hub API',
-    endpoints: ['/api/health', '/api/flashcards', '/api/study-logs', '/api/youtube/channels']
+    endpoints: ['/api/health', '/api/flashcards', '/api/study-logs', '/api/youtube/channels', '/api/captions/:videoId']
   });
 });
 
@@ -318,6 +319,73 @@ app.get('/api/cambridge-dictionary', async (req, res) => {
   } catch (error) {
     console.error('Cambridge Dictionary error:', error);
     return res.status(500).json({ error: 'Failed to fetch definition' });
+  }
+});
+
+// YouTube Captions API (using youtube-captions-scraper for serverless)
+app.get('/api/captions/:videoId', async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    const { lang = 'en' } = req.query;
+
+    if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      return res.status(400).json({ error: 'Valid Video ID is required' });
+    }
+
+    // Check cache
+    const cacheKey = `captions:${videoId}:${lang}`;
+    const cachedCaptions = await cache.get(cacheKey);
+    if (cachedCaptions) {
+      return res.json(cachedCaptions);
+    }
+
+    // Check error cache
+    const cachedError = await errorCache.get(videoId);
+    if (cachedError) {
+      return res.status(429).json({
+        error: 'Captions temporarily unavailable. Please try again later.',
+        retryAfter: 300,
+      });
+    }
+
+    try {
+      const subtitles = await getSubtitles({
+        videoID: videoId,
+        lang: lang as string,
+      });
+
+      if (!subtitles || subtitles.length === 0) {
+        throw new Error('No captions found');
+      }
+
+      // Convert to standard format
+      const captions = subtitles.map((sub: { start: string; dur: string; text: string }) => ({
+        start: parseFloat(sub.start),
+        duration: parseFloat(sub.dur),
+        end: parseFloat(sub.start) + parseFloat(sub.dur),
+        text: sub.text,
+      }));
+
+      const response = { captions, languageCode: lang as string };
+      await cache.set(cacheKey, response);
+      return res.json(response);
+    } catch (error: any) {
+      console.error('Error fetching captions:', error.message);
+
+      if (error.message?.includes('No captions found') || error.message?.includes('Could not find')) {
+        await errorCache.set(videoId, true);
+        return res.status(404).json({
+          error: 'Captions not available for this video.',
+        });
+      }
+
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('Error in captions endpoint:', error);
+    return res.status(500).json({
+      error: 'Failed to fetch captions.',
+    });
   }
 });
 
