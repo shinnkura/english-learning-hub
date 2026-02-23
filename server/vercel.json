@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/flashcards",
+      "dest": "/dist/index.js"
+    },
+    {
+      "src": "/youtube-learning",
+      "dest": "/dist/index.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/dist/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/index.js"
+    }
+  ]
+}

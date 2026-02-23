@@ -82,16 +82,16 @@ app.use('/api', limiter);
 // ============================================
 
 // Serve static files from public directory
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Flashcard review page
 app.get('/flashcards', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../public/flashcards.html'));
+  res.sendFile(path.join(__dirname, 'public/flashcards.html'));
 });
 
 // YouTube learning page
 app.get('/youtube-learning', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../public/youtube-learning.html'));
+  res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
 });
 
 // ============================================
