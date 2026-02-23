@@ -10,22 +10,19 @@ import {
   Keyboard,
   History,
   Trash2,
+  ExternalLink,
 } from 'lucide-react';
 import { storage, syncStorage } from '@/lib/chrome-storage';
+import { getFlashcardStats } from '@/lib/api/server';
 
 interface Settings {
   // API Settings
   apiBaseUrl: string;
-  ankiPocketUrl: string;
 
   // Timer Settings
   defaultTimerDuration: number;
   showTimerOnPage: boolean;
   enableNotifications: boolean;
-
-  // Anki Settings
-  ankiDeckName: string;
-  autoAddToAnki: boolean;
 
   // Subtitle Settings
   defaultFontSize: number;
@@ -41,14 +38,18 @@ interface StudyLog {
   startedAt: string;
 }
 
+interface FlashcardStats {
+  total: number;
+  dueForReview: number;
+  mastered: number;
+  learning: number;
+}
+
 const defaultSettings: Settings = {
   apiBaseUrl: 'http://localhost:3001',
-  ankiPocketUrl: 'http://localhost:3000',
   defaultTimerDuration: 25,
   showTimerOnPage: true,
   enableNotifications: true,
-  ankiDeckName: 'English',
-  autoAddToAnki: false,
   defaultFontSize: 18,
   defaultPosition: 80,
 };
@@ -56,9 +57,14 @@ const defaultSettings: Settings = {
 export function Options() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'anki' | 'history'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'flashcards' | 'history'>('general');
   const [studyLogs, setStudyLogs] = useState<StudyLog[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [flashcardStats, setFlashcardStats] = useState<FlashcardStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+
+  // Detect if running on Mac
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -73,6 +79,8 @@ export function Options() {
   useEffect(() => {
     if (activeTab === 'history') {
       loadStudyLogs();
+    } else if (activeTab === 'flashcards') {
+      loadFlashcardStats();
     }
   }, [activeTab]);
 
@@ -90,6 +98,20 @@ export function Options() {
       console.error('Failed to load study logs:', error);
     } finally {
       setIsLoadingLogs(false);
+    }
+  };
+
+  const loadFlashcardStats = async () => {
+    setIsLoadingStats(true);
+    try {
+      const result = await getFlashcardStats();
+      if (result.success && result.stats) {
+        setFlashcardStats(result.stats);
+      }
+    } catch (error) {
+      console.error('Failed to load flashcard stats:', error);
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
@@ -154,12 +176,12 @@ export function Options() {
             General
           </Button>
           <Button
-            variant={activeTab === 'anki' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('anki')}
+            variant={activeTab === 'flashcards' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('flashcards')}
             className="flex items-center gap-2"
           >
             <BookOpen className="h-4 w-4" />
-            Anki & Words
+            Flashcards
           </Button>
           <Button
             variant={activeTab === 'history' ? 'default' : 'outline'}
@@ -291,7 +313,7 @@ export function Options() {
               <CardContent className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    ELH Server URL (for study logs)
+                    Server URL
                   </label>
                   <input
                     type="text"
@@ -301,19 +323,9 @@ export function Options() {
                     }
                     className="w-full px-3 py-2 border border-input rounded-md bg-background"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    AnkiPocket URL (for dictionary/translation)
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.ankiPocketUrl}
-                    onChange={(e) =>
-                      setSettings({ ...settings, ankiPocketUrl: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Used for study logs, flashcards, and other server-side features
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -331,22 +343,31 @@ export function Options() {
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <span className="text-sm">Toggle Timer Display</span>
                     <kbd className="px-3 py-1 bg-muted rounded text-sm font-mono">
-                      Alt+Shift+T
+                      {isMac ? '⌃⇧T' : 'Alt+Shift+T'}
                     </kbd>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <span className="text-sm">Start Timer</span>
                     <kbd className="px-3 py-1 bg-muted rounded text-sm font-mono">
-                      Alt+Shift+S
+                      {isMac ? '⌃⇧S' : 'Alt+Shift+S'}
                     </kbd>
                   </div>
                   <div className="flex justify-between items-center py-2">
                     <span className="text-sm">Toggle Subtitle Overlay</span>
                     <kbd className="px-3 py-1 bg-muted rounded text-sm font-mono">
-                      Alt+Shift+C
+                      {isMac ? '⌃⇧C' : 'Alt+Shift+C'}
                     </kbd>
                   </div>
                 </div>
+                {isMac && (
+                  <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Mac Key Legend:</strong><br />
+                      ⌃ = Control key<br />
+                      ⇧ = Shift key
+                    </p>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground mt-4">
                   To customize shortcuts, go to chrome://extensions/shortcuts
                 </p>
@@ -355,73 +376,89 @@ export function Options() {
           </div>
         )}
 
-        {/* Anki Settings */}
-        {activeTab === 'anki' && (
+        {/* Flashcards Tab */}
+        {activeTab === 'flashcards' && (
           <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <BookOpen className="h-5 w-5" />
-                  Anki Integration
+                  Flashcard Statistics
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Default Deck Name
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.ankiDeckName}
-                    onChange={(e) =>
-                      setSettings({ ...settings, ankiDeckName: e.target.value })
-                    }
-                    className="w-64 px-3 py-2 border border-input rounded-md bg-background"
-                    placeholder="English"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cards will be added to this deck by default
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="autoAddToAnki"
-                    checked={settings.autoAddToAnki}
-                    onChange={(e) =>
-                      setSettings({ ...settings, autoAddToAnki: e.target.checked })
-                    }
-                    className="rounded"
-                  />
-                  <label htmlFor="autoAddToAnki" className="text-sm">
-                    Automatically add words to Anki (without confirmation)
-                  </label>
-                </div>
+              <CardContent>
+                {isLoadingStats ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Loading...
+                  </div>
+                ) : flashcardStats ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-lg text-center">
+                      <div className="text-3xl font-bold text-primary">
+                        {flashcardStats.total}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Total Cards</div>
+                    </div>
+                    <div className="p-4 bg-orange-50 rounded-lg text-center">
+                      <div className="text-3xl font-bold text-orange-600">
+                        {flashcardStats.dueForReview}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Due for Review</div>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-lg text-center">
+                      <div className="text-3xl font-bold text-blue-600">
+                        {flashcardStats.learning}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Learning</div>
+                    </div>
+                    <div className="p-4 bg-green-50 rounded-lg text-center">
+                      <div className="text-3xl font-bold text-green-600">
+                        {flashcardStats.mastered}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Mastered</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No flashcard data available.
+                    <br />
+                    Make sure the server is running.
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">AnkiConnect Setup</CardTitle>
+                <CardTitle className="text-lg">Review Flashcards</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Open the flashcard review app to study your saved vocabulary using spaced repetition.
+                </p>
+                <Button
+                  onClick={() => {
+                    window.open(`${settings.apiBaseUrl}/flashcards`, '_blank');
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Open Flashcard Review
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">How to Add Words</CardTitle>
               </CardHeader>
               <CardContent>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>Install Anki desktop app</li>
-                  <li>
-                    Install AnkiConnect add-on (code: <code className="bg-muted px-1 rounded">2055492159</code>)
-                  </li>
-                  <li>Restart Anki</li>
-                  <li>Make sure Anki is running when using this extension</li>
+                  <li>Select any English text on a webpage</li>
+                  <li>Right-click and choose "Look up word" or "Translate phrase"</li>
+                  <li>Click "Save to Flashcards" in the popup panel</li>
+                  <li>You can also use "Manual Input" mode to add custom words</li>
                 </ol>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() =>
-                    window.open('https://ankiweb.net/shared/info/2055492159', '_blank')
-                  }
-                >
-                  Get AnkiConnect
-                </Button>
               </CardContent>
             </Card>
           </div>
@@ -493,7 +530,7 @@ export function Options() {
         )}
 
         {/* Save Button */}
-        {activeTab !== 'history' && (
+        {activeTab === 'general' && (
           <div className="flex items-center gap-4 mt-6">
             <Button onClick={handleSave}>Save Settings</Button>
             {saved && (

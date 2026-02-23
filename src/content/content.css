@@ -344,7 +344,92 @@
   background: #f9fafb;
 }
 
-.elh-anki-btn {
+/* Header actions (minimize, close) */
+.elh-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Mode toggle (search results / manual input) */
+.elh-mode-toggle {
+  display: flex;
+  padding: 8px 12px;
+  gap: 4px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.elh-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.elh-mode-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.elh-mode-btn.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* Manual input form */
+.elh-manual-input {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.elh-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.elh-input-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.elh-input-group input,
+.elh-input-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  resize: vertical;
+}
+
+.elh-input-group input:focus,
+.elh-input-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.elh-input-group input::placeholder,
+.elh-input-group textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* Save button (flashcard) */
+.elh-save-btn {
   width: 100%;
   display: flex;
   align-items: center;
@@ -361,24 +446,28 @@
   transition: all 0.15s;
 }
 
-.elh-anki-btn:hover:not(:disabled) {
+.elh-save-btn:hover:not(:disabled) {
   background: #2563eb;
 }
 
-.elh-anki-btn:disabled {
+.elh-save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.elh-anki-btn.sending {
+.elh-save-btn.saving {
   background: #6b7280;
 }
 
-.elh-anki-btn.success {
+.elh-save-btn.success {
   background: #16a34a;
 }
 
-.elh-anki-btn.error {
+.elh-save-btn.exists {
+  background: #f59e0b;
+}
+
+.elh-save-btn.error {
   background: #dc2626;
 }
 
@@ -505,4 +594,300 @@
   font-size: 12px;
   min-width: 50px;
   text-align: center;
+}
+
+/* Word Lookup Panel (Timer Overlay) */
+.elh-lookup-panel {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 320px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: elh-slide-up 0.2s ease-out;
+}
+
+.elh-lookup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.elh-lookup-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.elh-lookup-search {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.elh-lookup-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.elh-lookup-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.elh-lookup-input::placeholder {
+  color: #9ca3af;
+}
+
+.elh-lookup-search-btn {
+  padding: 10px 14px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.elh-lookup-search-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.elh-lookup-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.elh-lookup-results {
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.elh-lookup-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 8px;
+  color: #6b7280;
+}
+
+.elh-lookup-empty {
+  text-align: center;
+  padding: 24px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.elh-lookup-word-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.elh-lookup-word {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.elh-lookup-phonetic {
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.elh-lookup-translation {
+  background: #f0fdf4;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.elh-lookup-label {
+  display: block;
+  font-size: 11px;
+  color: #16a34a;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.elh-lookup-trans-text {
+  font-size: 15px;
+  color: #15803d;
+  font-weight: 500;
+}
+
+.elh-lookup-definition {
+  margin-bottom: 12px;
+}
+
+.elh-lookup-pos {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.elh-lookup-def-text {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.elh-lookup-example {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 6px 0 0 0;
+}
+
+.elh-lookup-image {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.elh-lookup-image img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.elh-lookup-image-refresh {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.elh-lookup-image-refresh:hover {
+  background: white;
+  color: #1f2937;
+}
+
+.elh-lookup-save-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.elh-lookup-save-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.elh-lookup-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.elh-lookup-save-btn.saving {
+  background: #6b7280;
+}
+
+.elh-lookup-save-btn.success {
+  background: #16a34a;
+}
+
+.elh-lookup-save-btn.error {
+  background: #dc2626;
+}
+
+/* Dark mode for lookup panel */
+@media (prefers-color-scheme: dark) {
+  .elh-lookup-panel {
+    background: #1f2937;
+  }
+
+  .elh-lookup-header {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  .elh-lookup-title {
+    color: #f3f4f6;
+  }
+
+  .elh-lookup-search {
+    border-color: #374151;
+  }
+
+  .elh-lookup-input {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+  }
+
+  .elh-lookup-input::placeholder {
+    color: #6b7280;
+  }
+
+  .elh-lookup-word {
+    color: #f3f4f6;
+  }
+
+  .elh-lookup-phonetic {
+    color: #9ca3af;
+  }
+
+  .elh-lookup-translation {
+    background: rgba(22, 163, 74, 0.15);
+  }
+
+  .elh-lookup-def-text {
+    color: #d1d5db;
+  }
+
+  .elh-lookup-example {
+    color: #9ca3af;
+  }
+
+  .elh-lookup-empty {
+    color: #6b7280;
+  }
 }

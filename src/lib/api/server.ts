@@ -205,6 +205,224 @@ export async function searchImage(query: string): Promise<{
 }
 
 // ============================================
+// Flashcards API
+// ============================================
+
+export interface Flashcard {
+  id?: number;
+  word: string;
+  meaning: string;
+  definition?: string;
+  example?: string;
+  phonetic?: string;
+  imageUrl?: string;
+  sourceUrl?: string;
+  easeFactor?: number;
+  intervalDays?: number;
+  repetitions?: number;
+  nextReviewAt?: string;
+  lastReviewedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FlashcardInput {
+  word: string;
+  meaning: string;
+  definition?: string;
+  example?: string;
+  phonetic?: string;
+  image_url?: string;
+  source_url?: string;
+}
+
+/**
+ * フラッシュカードを保存
+ */
+export async function saveFlashcard(flashcard: FlashcardInput): Promise<{
+  success: boolean;
+  id?: number;
+  exists?: boolean;
+  error?: string;
+}> {
+  try {
+    const baseUrl = await getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/flashcards`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(flashcard),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 409) {
+      return { success: false, exists: true };
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || `Failed to save flashcard: ${response.status}`);
+    }
+
+    return { success: true, id: data.id };
+  } catch (error) {
+    console.error('Failed to save flashcard:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * フラッシュカード一覧を取得
+ */
+export async function getFlashcards(): Promise<{
+  success: boolean;
+  data?: Flashcard[];
+  error?: string;
+}> {
+  try {
+    const baseUrl = await getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/flashcards`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch flashcards: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { success: true, data: data.data || [] };
+  } catch (error) {
+    console.error('Failed to fetch flashcards:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * 復習対象のフラッシュカードを取得
+ */
+export async function getFlashcardsForReview(limit?: number): Promise<{
+  success: boolean;
+  data?: Flashcard[];
+  error?: string;
+}> {
+  try {
+    const baseUrl = await getApiBaseUrl();
+    const url = limit
+      ? `${baseUrl}/api/flashcards/review?limit=${limit}`
+      : `${baseUrl}/api/flashcards/review`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch review flashcards: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { success: true, data: data.data || [] };
+  } catch (error) {
+    console.error('Failed to fetch review flashcards:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * フラッシュカードの復習結果を記録
+ * @param id フラッシュカードID
+ * @param quality 回答品質 (0-5: 0=完全に忘れた, 5=完璧に覚えている)
+ */
+export async function recordReview(id: number, quality: number): Promise<{
+  success: boolean;
+  nextReviewAt?: string;
+  error?: string;
+}> {
+  try {
+    const baseUrl = await getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/flashcards/${id}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quality }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to record review: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { success: true, nextReviewAt: data.nextReviewAt };
+  } catch (error) {
+    console.error('Failed to record review:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * フラッシュカードを削除
+ */
+export async function deleteFlashcard(id: number): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const baseUrl = await getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/flashcards/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete flashcard: ${response.status}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete flashcard:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * フラッシュカード統計を取得
+ */
+export async function getFlashcardStats(): Promise<{
+  success: boolean;
+  stats?: {
+    total: number;
+    dueForReview: number;
+    mastered: number;
+    learning: number;
+  };
+  error?: string;
+}> {
+  try {
+    const baseUrl = await getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/flashcards/stats`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch flashcard stats: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { success: true, stats: data };
+  } catch (error) {
+    console.error('Failed to fetch flashcard stats:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// ============================================
 // Cambridge Dictionary API (Server経由 - CORS回避)
 // ============================================
 

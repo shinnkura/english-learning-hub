@@ -40,7 +40,6 @@
   ],
   "host_permissions": [
     "http://localhost:3001/*",
-    "http://127.0.0.1:8765/*",
     "https://api.dictionaryapi.dev/*",
     "https://api.mymemory.translated.net/*",
     "https://picsum.photos/*",
@@ -52,21 +51,21 @@
     "toggle-timer": {
       "suggested_key": {
         "default": "Alt+Shift+T",
-        "mac": "Alt+Shift+T"
+        "mac": "MacCtrl+Shift+T"
       },
       "description": "Toggle timer display"
     },
     "start-timer": {
       "suggested_key": {
         "default": "Alt+Shift+S",
-        "mac": "Alt+Shift+S"
+        "mac": "MacCtrl+Shift+S"
       },
       "description": "Start timer"
     },
     "toggle-subtitles": {
       "suggested_key": {
         "default": "Alt+Shift+C",
-        "mac": "Alt+Shift+C"
+        "mac": "MacCtrl+Shift+C"
       },
       "description": "Toggle subtitle overlay"
     }

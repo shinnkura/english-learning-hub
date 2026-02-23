@@ -1,11 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, Square, Minimize2, Maximize2 } from 'lucide-react';
+import { Play, Pause, Square, Minimize2, Maximize2, BookOpen, Search, X, Loader2, Save, Check, Volume2, RefreshCw } from 'lucide-react';
 import type { TimerState } from '@/types';
+import { lookupWord, type DictionaryResult } from '@/lib/api/dictionary';
+import { translateToJapanese } from '@/lib/api/translate';
+import { saveFlashcard, searchImage } from '@/lib/api/server';
 
 interface TimerOverlayProps {
   timerState: TimerState;
   isVisible: boolean;
   onToggleVisibility: () => void;
+}
+
+interface LookupState {
+  isOpen: boolean;
+  searchQuery: string;
+  isLoading: boolean;
+  dictionary: DictionaryResult | null;
+  translation: string | null;
+  imageUrl: string | null;
+  saveStatus: 'idle' | 'saving' | 'success' | 'error';
 }
 
 export function TimerOverlay({ timerState, isVisible, onToggleVisibility: _onToggleVisibility }: TimerOverlayProps) {
@@ -14,8 +27,18 @@ export function TimerOverlay({ timerState, isVisible, onToggleVisibility: _onTog
   const [position, setPosition] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [lookup, setLookup] = useState<LookupState>({
+    isOpen: false,
+    searchQuery: '',
+    isLoading: false,
+    dictionary: null,
+    translation: null,
+    imageUrl: null,
+    saveStatus: 'idle',
+  });
   const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Update remaining time every second
   useEffect(() => {
@@ -119,6 +142,134 @@ export function TimerOverlay({ timerState, isVisible, onToggleVisibility: _onTog
     setIsFinished(false);
   };
 
+  // Word lookup handlers
+  const handleOpenLookup = () => {
+    setLookup(prev => ({ ...prev, isOpen: true }));
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+  };
+
+  const handleCloseLookup = () => {
+    setLookup({
+      isOpen: false,
+      searchQuery: '',
+      isLoading: false,
+      dictionary: null,
+      translation: null,
+      imageUrl: null,
+      saveStatus: 'idle',
+    });
+  };
+
+  const handleSearch = async () => {
+    const query = lookup.searchQuery.trim();
+    if (!query) return;
+
+    setLookup(prev => ({ ...prev, isLoading: true, dictionary: null, translation: null, imageUrl: null }));
+
+    try {
+      // Lookup word in dictionary
+      const dictResult = await lookupWord(query);
+      if (dictResult.success) {
+        setLookup(prev => ({ ...prev, dictionary: dictResult }));
+      }
+
+      // Get translation
+      const transResult = await translateToJapanese(query);
+      if (transResult.success) {
+        setLookup(prev => ({ ...prev, translation: transResult.translatedText }));
+      }
+
+      // Get image
+      const imageResult = await searchImage(query);
+      if (imageResult.success && imageResult.imageUrl) {
+        setLookup(prev => ({ ...prev, imageUrl: imageResult.imageUrl! }));
+      }
+    } catch (error) {
+      console.error('Lookup error:', error);
+    } finally {
+      setLookup(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const handleRefreshImage = async () => {
+    const query = lookup.searchQuery.trim();
+    if (!query) return;
+
+    try {
+      const imageResult = await searchImage(`${query} ${Date.now()}`);
+      if (imageResult.success && imageResult.imageUrl) {
+        setLookup(prev => ({ ...prev, imageUrl: imageResult.imageUrl! }));
+      }
+    } catch (error) {
+      console.error('Image refresh error:', error);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    } else if (e.key === 'Escape') {
+      handleCloseLookup();
+    }
+  };
+
+  const handleSaveToFlashcards = async () => {
+    if (!lookup.searchQuery.trim()) return;
+
+    setLookup(prev => ({ ...prev, saveStatus: 'saving' }));
+
+    try {
+      let meaning = lookup.translation || '';
+      let definition = '';
+      let example = '';
+
+      if (lookup.dictionary && lookup.dictionary.meanings.length > 0) {
+        const firstMeaning = lookup.dictionary.meanings[0];
+        const firstDef = firstMeaning.definitions[0];
+        if (firstDef) {
+          definition = `${firstMeaning.partOfSpeech}: ${firstDef.definition}`;
+          example = firstDef.example || '';
+        }
+      }
+
+      const result = await saveFlashcard({
+        word: lookup.searchQuery.trim(),
+        meaning: meaning || definition || lookup.searchQuery,
+        definition,
+        example,
+        phonetic: lookup.dictionary?.phonetic,
+        image_url: lookup.imageUrl || undefined,
+        source_url: window.location.href,
+      });
+
+      if (result.success) {
+        setLookup(prev => ({ ...prev, saveStatus: 'success' }));
+        setTimeout(() => setLookup(prev => ({ ...prev, saveStatus: 'idle' })), 2000);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      setLookup(prev => ({ ...prev, saveStatus: 'error' }));
+      setTimeout(() => setLookup(prev => ({ ...prev, saveStatus: 'idle' })), 2000);
+    }
+  };
+
+  const playPronunciation = () => {
+    if (lookup.dictionary?.audioUrl) {
+      const audio = new Audio(lookup.dictionary.audioUrl);
+      audio.play().catch(() => {
+        const utterance = new SpeechSynthesisUtterance(lookup.searchQuery);
+        utterance.lang = 'en-US';
+        speechSynthesis.speak(utterance);
+      });
+    } else {
+      const utterance = new SpeechSynthesisUtterance(lookup.searchQuery);
+      utterance.lang = 'en-US';
+      speechSynthesis.speak(utterance);
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -181,6 +332,17 @@ export function TimerOverlay({ timerState, isVisible, onToggleVisibility: _onTog
           </div>
         )}
 
+        {/* Word lookup button */}
+        {!isMinimized && (
+          <button
+            className="elh-timer-btn"
+            onClick={handleOpenLookup}
+            title="単語検索"
+          >
+            <BookOpen size={16} />
+          </button>
+        )}
+
         {/* Minimize/Maximize button */}
         <button
           className="elh-timer-btn"
@@ -190,6 +352,126 @@ export function TimerOverlay({ timerState, isVisible, onToggleVisibility: _onTog
           {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
         </button>
       </div>
+
+      {/* Word Lookup Panel */}
+      {lookup.isOpen && (
+        <div className="elh-lookup-panel">
+          <div className="elh-lookup-header">
+            <span className="elh-lookup-title">単語検索</span>
+            <button className="elh-timer-btn" onClick={handleCloseLookup}>
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="elh-lookup-search">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={lookup.searchQuery}
+              onChange={(e) => setLookup(prev => ({ ...prev, searchQuery: e.target.value }))}
+              onKeyDown={handleKeyDown}
+              placeholder="単語を入力..."
+              className="elh-lookup-input"
+            />
+            <button
+              className="elh-lookup-search-btn"
+              onClick={handleSearch}
+              disabled={lookup.isLoading || !lookup.searchQuery.trim()}
+            >
+              {lookup.isLoading ? <Loader2 size={16} className="elh-spinner" /> : <Search size={16} />}
+            </button>
+          </div>
+
+          {/* Results */}
+          <div className="elh-lookup-results">
+            {lookup.isLoading ? (
+              <div className="elh-lookup-loading">
+                <Loader2 size={20} className="elh-spinner" />
+                <span>検索中...</span>
+              </div>
+            ) : lookup.translation || lookup.dictionary ? (
+              <>
+                {/* Word with pronunciation */}
+                {lookup.dictionary && (
+                  <div className="elh-lookup-word-header">
+                    <span className="elh-lookup-word">{lookup.searchQuery}</span>
+                    {lookup.dictionary.phonetic && (
+                      <span className="elh-lookup-phonetic">/{lookup.dictionary.phonetic}/</span>
+                    )}
+                    <button className="elh-timer-btn" onClick={playPronunciation} title="発音">
+                      <Volume2 size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Translation */}
+                {lookup.translation && (
+                  <div className="elh-lookup-translation">
+                    <span className="elh-lookup-label">日本語</span>
+                    <span className="elh-lookup-trans-text">{lookup.translation}</span>
+                  </div>
+                )}
+
+                {/* Definition */}
+                {lookup.dictionary && lookup.dictionary.meanings.length > 0 && (
+                  <div className="elh-lookup-definition">
+                    <span className="elh-lookup-pos">
+                      {lookup.dictionary.meanings[0].partOfSpeech}
+                    </span>
+                    <p className="elh-lookup-def-text">
+                      {lookup.dictionary.meanings[0].definitions[0]?.definition}
+                    </p>
+                    {lookup.dictionary.meanings[0].definitions[0]?.example && (
+                      <p className="elh-lookup-example">
+                        "{lookup.dictionary.meanings[0].definitions[0].example}"
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Image */}
+                {lookup.imageUrl && (
+                  <div className="elh-lookup-image">
+                    <img src={lookup.imageUrl} alt={lookup.searchQuery} />
+                    <button
+                      className="elh-lookup-image-refresh"
+                      onClick={handleRefreshImage}
+                      title="別の画像"
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Save button */}
+                <button
+                  className={`elh-lookup-save-btn ${lookup.saveStatus}`}
+                  onClick={handleSaveToFlashcards}
+                  disabled={lookup.saveStatus === 'saving'}
+                >
+                  {lookup.saveStatus === 'saving' ? (
+                    <><Loader2 size={14} className="elh-spinner" /> 保存中...</>
+                  ) : lookup.saveStatus === 'success' ? (
+                    <><Check size={14} /> 保存しました</>
+                  ) : lookup.saveStatus === 'error' ? (
+                    '保存失敗'
+                  ) : (
+                    <><Save size={14} /> 単語帳に保存</>
+                  )}
+                </button>
+              </>
+            ) : lookup.searchQuery.trim() ? (
+              <div className="elh-lookup-empty">
+                Enterキーまたは検索ボタンで検索
+              </div>
+            ) : (
+              <div className="elh-lookup-empty">
+                単語を入力して検索してください
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

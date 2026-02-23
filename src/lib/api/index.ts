@@ -3,9 +3,8 @@
  */
 
 // Direct API calls (no server needed)
-export * from './anki-connect';
 export * from './dictionary';
 export * from './translate';
 
-// Server API calls (DB, API keys)
+// Server API calls (DB, API keys, flashcards)
 export * from './server';

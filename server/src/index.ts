@@ -9,15 +9,25 @@
  */
 
 import express from 'express';
-import { Innertube } from 'youtubei.js';
 import cors from 'cors';
 import Keyv from 'keyv';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'node:http';
 import { neon } from '@neondatabase/serverless';
 import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
+import { unlink, readFile } from 'node:fs/promises';
+import os from 'node:os';
+
+const execAsync = promisify(exec);
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -42,29 +52,12 @@ cache.on('error', (err) => console.error('Cache error:', err));
 errorCache.on('error', (err) => console.error('Error cache error:', err));
 
 // ============================================
-// YouTube Client
-// ============================================
-
-let youtube: Innertube | null = null;
-
-const initYoutube = async () => {
-  if (!youtube) {
-    youtube = await Innertube.create({
-      lang: 'en',
-      location: 'US',
-      retrieve_player: false,
-    });
-  }
-  return youtube;
-};
-
-// ============================================
 // Middleware
 // ============================================
 
 const corsOptions = {
   origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true,
 };
@@ -83,6 +76,23 @@ const limiter = rateLimit({
 });
 
 app.use('/api', limiter);
+
+// ============================================
+// Static Files & Pages
+// ============================================
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Flashcard review page
+app.get('/flashcards', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/flashcards.html'));
+});
+
+// YouTube learning page
+app.get('/youtube-learning', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/youtube-learning.html'));
+});
 
 // ============================================
 // Health Check
@@ -183,20 +193,246 @@ app.get('/api/study-logs', async (req, res) => {
 });
 
 // ============================================
-// YouTube Captions API
+// Flashcards API
+// ============================================
+
+// Create a new flashcard
+app.post('/api/flashcards', async (req, res) => {
+  try {
+    const { word, meaning, definition, example, phonetic, image_url, source_url } = req.body;
+
+    if (!word || !meaning) {
+      return res.status(400).json({
+        error: 'Missing required fields: word, meaning',
+        success: false,
+      });
+    }
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+
+    // Check if word already exists
+    const existing = await sql`SELECT id FROM flashcards WHERE word = ${word}`;
+    if (existing.length > 0) {
+      return res.status(409).json({
+        error: 'Word already exists',
+        success: false,
+        existingId: existing[0].id,
+      });
+    }
+
+    const result = await sql`
+      INSERT INTO flashcards (word, meaning, definition, example, phonetic, image_url, source_url)
+      VALUES (${word}, ${meaning}, ${definition || null}, ${example || null}, ${phonetic || null}, ${image_url || null}, ${source_url || null})
+      RETURNING *
+    `;
+
+    return res.json({ success: true, data: result[0] });
+  } catch (error: any) {
+    console.error('Error creating flashcard:', error);
+    return res.status(500).json({ error: 'Failed to create flashcard', success: false });
+  }
+});
+
+// Get all flashcards
+app.get('/api/flashcards', async (req, res) => {
+  try {
+    const { limit = '100', offset = '0' } = req.query;
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    const result = await sql`
+      SELECT * FROM flashcards
+      ORDER BY created_at DESC
+      LIMIT ${parseInt(limit as string, 10)}
+      OFFSET ${parseInt(offset as string, 10)}
+    `;
+
+    const countResult = await sql`SELECT COUNT(*) as total FROM flashcards`;
+
+    return res.json({
+      success: true,
+      data: result,
+      total: parseInt(countResult[0].total as string, 10),
+    });
+  } catch (error: any) {
+    console.error('Error fetching flashcards:', error);
+    return res.status(500).json({ error: 'Failed to fetch flashcards', success: false });
+  }
+});
+
+// Get flashcards due for review
+app.get('/api/flashcards/review', async (req, res) => {
+  try {
+    const { limit = '20' } = req.query;
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    const result = await sql`
+      SELECT * FROM flashcards
+      WHERE next_review_at <= NOW()
+      ORDER BY next_review_at ASC
+      LIMIT ${parseInt(limit as string, 10)}
+    `;
+
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching review cards:', error);
+    return res.status(500).json({ error: 'Failed to fetch review cards', success: false });
+  }
+});
+
+// Update flashcard after review (SM-2 algorithm)
+app.post('/api/flashcards/:id/review', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quality } = req.body; // 0-5: 0=complete blackout, 5=perfect response
+
+    if (quality === undefined || quality < 0 || quality > 5) {
+      return res.status(400).json({ error: 'Quality must be between 0 and 5', success: false });
+    }
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+
+    // Get current card
+    const cards = await sql`SELECT * FROM flashcards WHERE id = ${id}`;
+    if (cards.length === 0) {
+      return res.status(404).json({ error: 'Flashcard not found', success: false });
+    }
+
+    const card = cards[0];
+    let { ease_factor, interval_days, repetitions } = card;
+
+    // SM-2 Algorithm
+    if (quality < 3) {
+      // Failed - reset
+      repetitions = 0;
+      interval_days = 0;
+    } else {
+      // Success
+      if (repetitions === 0) {
+        interval_days = 1;
+      } else if (repetitions === 1) {
+        interval_days = 6;
+      } else {
+        interval_days = Math.round(interval_days * ease_factor);
+      }
+      repetitions += 1;
+    }
+
+    // Update ease factor
+    ease_factor = Math.max(
+      1.3,
+      ease_factor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+    );
+
+    // Calculate next review date
+    const nextReview = new Date();
+    nextReview.setDate(nextReview.getDate() + interval_days);
+
+    const result = await sql`
+      UPDATE flashcards
+      SET ease_factor = ${ease_factor},
+          interval_days = ${interval_days},
+          repetitions = ${repetitions},
+          next_review_at = ${nextReview.toISOString()},
+          last_reviewed_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `;
+
+    return res.json({ success: true, data: result[0] });
+  } catch (error: any) {
+    console.error('Error updating flashcard review:', error);
+    return res.status(500).json({ error: 'Failed to update review', success: false });
+  }
+});
+
+// Delete a flashcard
+app.delete('/api/flashcards/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    await sql`DELETE FROM flashcards WHERE id = ${id}`;
+
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting flashcard:', error);
+    return res.status(500).json({ error: 'Failed to delete flashcard', success: false });
+  }
+});
+
+// Get flashcard statistics
+app.get('/api/flashcards/stats', async (req, res) => {
+  try {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+
+    const totalResult = await sql`SELECT COUNT(*) as total FROM flashcards`;
+    const dueResult = await sql`SELECT COUNT(*) as due FROM flashcards WHERE next_review_at <= NOW()`;
+    const masteredResult = await sql`SELECT COUNT(*) as mastered FROM flashcards WHERE interval_days >= 21`;
+    const learningResult = await sql`SELECT COUNT(*) as learning FROM flashcards WHERE interval_days > 0 AND interval_days < 21`;
+
+    const total = parseInt(totalResult[0].total as string, 10);
+    const dueForReview = parseInt(dueResult[0].due as string, 10);
+    const mastered = parseInt(masteredResult[0].mastered as string, 10);
+    const learning = parseInt(learningResult[0].learning as string, 10);
+
+    return res.json({
+      success: true,
+      total,
+      dueForReview,
+      mastered,
+      learning,
+    });
+  } catch (error: any) {
+    console.error('Error fetching flashcard stats:', error);
+    return res.status(500).json({ error: 'Failed to fetch stats', success: false });
+  }
+});
+
+// ============================================
+// YouTube Captions API (using yt-dlp)
 // ============================================
 
 app.get('/api/captions/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params;
-    const { lang } = req.query;
+    const { lang = 'en' } = req.query;
 
-    if (!videoId) {
-      return res.status(400).json({ error: 'Video ID is required' });
+    if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      return res.status(400).json({ error: 'Valid Video ID is required' });
     }
 
     // Check cache
-    const cacheKey = `captions:${videoId}:${lang || 'default'}`;
+    const cacheKey = `captions:${videoId}:${lang}`;
     const cachedCaptions = await cache.get(cacheKey);
     if (cachedCaptions) {
       return res.json(cachedCaptions);
@@ -212,31 +448,59 @@ app.get('/api/captions/:videoId', async (req, res) => {
     }
 
     try {
-      const yt = await initYoutube();
-      const info = await yt.getInfo(videoId);
-      const transcriptData = await info.getTranscript();
+      const tmpFile = `${os.tmpdir()}/caption_${videoId}_${Date.now()}`;
+      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-      if (!transcriptData || !transcriptData.transcript) {
-        throw new Error('Transcript not found');
+      // Use yt-dlp to download subtitles
+      const cmd = `yt-dlp --write-auto-sub --sub-lang ${lang} --skip-download --sub-format json3 -o "${tmpFile}" "${videoUrl}" 2>&1`;
+
+      await execAsync(cmd, { timeout: 30000 });
+
+      const jsonFile = `${tmpFile}.${lang}.json3`;
+      const jsonContent = await readFile(jsonFile, 'utf-8');
+      const data = JSON.parse(jsonContent);
+
+      // Clean up temp file
+      await unlink(jsonFile).catch(() => {});
+
+      // Parse JSON3 format
+      const captions: Array<{ start: number; end: number; duration: number; text: string }> = [];
+
+      if (data.events) {
+        for (const event of data.events) {
+          if (event.segs && event.tStartMs !== undefined) {
+            const text = event.segs
+              .map((seg: any) => seg.utf8 || '')
+              .join('')
+              .replace(/\n/g, ' ')
+              .trim();
+
+            if (text) {
+              const startMs = event.tStartMs;
+              const durationMs = event.dDurationMs || 2000;
+
+              captions.push({
+                start: startMs / 1000,
+                end: (startMs + durationMs) / 1000,
+                duration: durationMs / 1000,
+                text,
+              });
+            }
+          }
+        }
       }
 
-      const transcript = transcriptData.transcript as any;
-      const segments = transcript?.content?.body?.initial_segments || [];
+      if (captions.length === 0) {
+        throw new Error('No captions found');
+      }
 
-      const captions = segments.map((segment: any) => ({
-        start: segment.start_ms / 1000,
-        end: (segment.start_ms + segment.duration_ms) / 1000,
-        duration: segment.duration_ms / 1000,
-        text: segment.snippet?.text || '',
-      }));
-
-      const response = { captions, languageCode: transcript?.language_code || 'en' };
+      const response = { captions, languageCode: lang as string };
       await cache.set(cacheKey, response);
       return res.json(response);
     } catch (error: any) {
-      console.error('Error fetching transcript:', error);
+      console.error('Error fetching captions:', error.message);
 
-      if (error.message?.includes('Transcript not found')) {
+      if (error.message?.includes('No captions found') || error.message?.includes('ENOENT')) {
         await errorCache.set(videoId, true);
         return res.status(404).json({
           error: 'Captions not available for this video.',
@@ -299,6 +563,482 @@ app.get('/api/unsplash', async (req, res) => {
       imageUrl: `https://picsum.photos/seed/${Date.now()}/400/300`,
       source: 'placeholder',
     });
+  }
+});
+
+// ============================================
+// YouTube Channels API
+// ============================================
+
+// Extract channel ID from various YouTube URL formats or direct channel ID
+function extractChannelIdentifier(input: string): { type: 'id' | 'handle' | 'username'; value: string } | null {
+  // Direct channel ID (starts with UC)
+  if (/^UC[\w-]{22}$/.test(input)) {
+    return { type: 'id', value: input };
+  }
+
+  // Handle format (@username)
+  const handleMatch = input.match(/@([\w.-]+)/);
+  if (handleMatch) {
+    return { type: 'handle', value: handleMatch[1] };
+  }
+
+  // YouTube URL patterns
+  const patterns = [
+    /youtube\.com\/channel\/(UC[\w-]{22})/,
+    /youtube\.com\/@([\w.-]+)/,
+    /youtube\.com\/c\/([\w.-]+)/,
+    /youtube\.com\/user\/([\w.-]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = input.match(pattern);
+    if (match) {
+      if (pattern.source.includes('/channel/')) {
+        return { type: 'id', value: match[1] };
+      } else if (pattern.source.includes('/@')) {
+        return { type: 'handle', value: match[1] };
+      } else {
+        return { type: 'username', value: match[1] };
+      }
+    }
+  }
+
+  // Assume it's a handle if nothing else matches
+  if (/^[\w.-]+$/.test(input)) {
+    return { type: 'handle', value: input };
+  }
+
+  return null;
+}
+
+// Register a new YouTube channel
+app.post('/api/youtube/channels', async (req, res) => {
+  try {
+    const { channelIdentifier } = req.body;
+
+    if (!channelIdentifier) {
+      return res.status(400).json({
+        error: 'Channel identifier is required (URL, channel ID, or @handle)',
+        success: false,
+      });
+    }
+
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'YouTube API key not configured', success: false });
+    }
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const identifier = extractChannelIdentifier(channelIdentifier.trim());
+    if (!identifier) {
+      return res.status(400).json({ error: 'Invalid channel identifier format', success: false });
+    }
+
+    let channelId = '';
+
+    // If it's a handle or username, we need to resolve it to a channel ID
+    if (identifier.type === 'id') {
+      channelId = identifier.value;
+    } else if (identifier.type === 'handle') {
+      // Use search to find channel by handle
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=@${encodeURIComponent(identifier.value)}&key=${apiKey}`;
+      const searchResponse = await fetch(searchUrl);
+      const searchData = await searchResponse.json() as any;
+
+      if (!searchData.items || searchData.items.length === 0) {
+        return res.status(404).json({ error: 'Channel not found', success: false });
+      }
+      channelId = searchData.items[0].snippet.channelId;
+    } else {
+      // Username - use forUsername parameter
+      const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forUsername=${encodeURIComponent(identifier.value)}&key=${apiKey}`;
+      const channelResponse = await fetch(channelUrl);
+      const channelData = await channelResponse.json() as any;
+
+      if (!channelData.items || channelData.items.length === 0) {
+        return res.status(404).json({ error: 'Channel not found', success: false });
+      }
+      channelId = channelData.items[0].id;
+    }
+
+    // Fetch channel details
+    const detailsUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${apiKey}`;
+    const detailsResponse = await fetch(detailsUrl);
+    const detailsData = await detailsResponse.json() as any;
+
+    if (!detailsData.items || detailsData.items.length === 0) {
+      return res.status(404).json({ error: 'Channel not found', success: false });
+    }
+
+    const channel = detailsData.items[0];
+    const sql = neon(databaseUrl);
+
+    // Check if channel already exists
+    const existing = await sql`SELECT id FROM youtube_channels WHERE channel_id = ${channelId}`;
+    if (existing.length > 0) {
+      return res.status(409).json({
+        error: 'Channel already registered',
+        success: false,
+        existingId: existing[0].id,
+      });
+    }
+
+    // Insert the channel
+    const result = await sql`
+      INSERT INTO youtube_channels (
+        channel_id, channel_name, thumbnail_url, subscriber_count, video_count, description
+      ) VALUES (
+        ${channelId},
+        ${channel.snippet.title},
+        ${channel.snippet.thumbnails?.default?.url || null},
+        ${parseInt(channel.statistics?.subscriberCount || '0', 10)},
+        ${parseInt(channel.statistics?.videoCount || '0', 10)},
+        ${channel.snippet.description || null}
+      )
+      RETURNING *
+    `;
+
+    return res.json({ success: true, data: result[0] });
+  } catch (error: any) {
+    console.error('Error registering channel:', error);
+    return res.status(500).json({ error: 'Failed to register channel', success: false });
+  }
+});
+
+// Get all registered channels
+app.get('/api/youtube/channels', async (req, res) => {
+  try {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    const result = await sql`
+      SELECT * FROM youtube_channels
+      ORDER BY created_at DESC
+    `;
+
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching channels:', error);
+    return res.status(500).json({ error: 'Failed to fetch channels', success: false });
+  }
+});
+
+// Delete a channel
+app.delete('/api/youtube/channels/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    await sql`DELETE FROM youtube_channels WHERE id = ${id}`;
+
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting channel:', error);
+    return res.status(500).json({ error: 'Failed to delete channel', success: false });
+  }
+});
+
+// Get random videos from registered channels
+app.get('/api/youtube/videos', async (req, res) => {
+  try {
+    const { limit = '10' } = req.query;
+    const limitNum = Math.min(parseInt(limit as string, 10) || 10, 50);
+
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'YouTube API key not configured', success: false });
+    }
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    const channels = await sql`SELECT channel_id, channel_name FROM youtube_channels`;
+
+    if (channels.length === 0) {
+      return res.json({ success: true, data: [], message: 'No channels registered' });
+    }
+
+    // Check cache for videos
+    const cacheKey = 'youtube:videos:all';
+    let cachedVideos = await cache.get(cacheKey) as any[] | undefined;
+
+    if (!cachedVideos) {
+      // Fetch videos from all channels
+      const allVideos: any[] = [];
+
+      for (const channel of channels) {
+        try {
+          const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channel.channel_id}&type=video&order=date&maxResults=20&key=${apiKey}`;
+          const searchResponse = await fetch(searchUrl);
+          const searchData = await searchResponse.json() as any;
+
+          if (searchData.items) {
+            const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',');
+
+            // Get video details including duration
+            const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoIds}&key=${apiKey}`;
+            const detailsResponse = await fetch(detailsUrl);
+            const detailsData = await detailsResponse.json() as any;
+
+            if (detailsData.items) {
+              for (const video of detailsData.items) {
+                // Parse ISO 8601 duration
+                const durationMatch = video.contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+                const hours = parseInt(durationMatch?.[1] || '0', 10);
+                const minutes = parseInt(durationMatch?.[2] || '0', 10);
+                const seconds = parseInt(durationMatch?.[3] || '0', 10);
+                const durationSeconds = hours * 3600 + minutes * 60 + seconds;
+
+                allVideos.push({
+                  videoId: video.id,
+                  title: video.snippet.title,
+                  thumbnail: video.snippet.thumbnails?.medium?.url || video.snippet.thumbnails?.default?.url,
+                  channelId: channel.channel_id,
+                  channelName: channel.channel_name,
+                  publishedAt: video.snippet.publishedAt,
+                  durationSeconds,
+                  duration: `${hours > 0 ? hours + ':' : ''}${minutes.toString().padStart(hours > 0 ? 2 : 1, '0')}:${seconds.toString().padStart(2, '0')}`,
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching videos for channel ${channel.channel_id}:`, error);
+        }
+      }
+
+      cachedVideos = allVideos;
+      // Cache for 1 hour to reduce API quota usage
+      await cache.set(cacheKey, allVideos, 60 * 60 * 1000);
+    }
+
+    // Shuffle and return random videos
+    const shuffled = [...cachedVideos].sort(() => Math.random() - 0.5);
+    const selectedVideos = shuffled.slice(0, limitNum);
+
+    return res.json({ success: true, data: selectedVideos });
+  } catch (error: any) {
+    console.error('Error fetching videos:', error);
+    return res.status(500).json({ error: 'Failed to fetch videos', success: false });
+  }
+});
+
+// Clear video cache (useful when new channels are added)
+app.post('/api/youtube/videos/refresh', async (_req, res) => {
+  try {
+    await cache.delete('youtube:videos:all');
+    return res.json({ success: true, message: 'Video cache cleared' });
+  } catch (error: any) {
+    console.error('Error clearing cache:', error);
+    return res.status(500).json({ error: 'Failed to clear cache', success: false });
+  }
+});
+
+// ============================================
+// YouTube Learning Logs API
+// ============================================
+
+// Save a learning log
+app.post('/api/youtube/learning-logs', async (req, res) => {
+  try {
+    const {
+      video_id,
+      video_title,
+      channel_id,
+      channel_name,
+      thumbnail_url,
+      duration_seconds,
+      video_duration_seconds,
+      started_at,
+      ended_at,
+      notes,
+    } = req.body;
+
+    if (!video_id || !video_title || !started_at || !ended_at || duration_seconds === undefined) {
+      return res.status(400).json({
+        error: 'Missing required fields: video_id, video_title, started_at, ended_at, duration_seconds',
+        success: false,
+      });
+    }
+
+    // Don't save learning sessions less than 30 seconds
+    if (duration_seconds < 30) {
+      return res.status(400).json({
+        error: 'Learning session must be at least 30 seconds',
+        success: false,
+      });
+    }
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    const result = await sql`
+      INSERT INTO youtube_learning_logs (
+        video_id, video_title, channel_id, channel_name, thumbnail_url,
+        duration_seconds, video_duration_seconds, started_at, ended_at, notes
+      ) VALUES (
+        ${video_id},
+        ${video_title},
+        ${channel_id || null},
+        ${channel_name || null},
+        ${thumbnail_url || null},
+        ${duration_seconds},
+        ${video_duration_seconds || null},
+        ${started_at},
+        ${ended_at},
+        ${notes || null}
+      )
+      RETURNING *
+    `;
+
+    return res.json({ success: true, data: result[0] });
+  } catch (error: any) {
+    console.error('Error saving learning log:', error);
+    return res.status(500).json({ error: 'Failed to save learning log', success: false });
+  }
+});
+
+// Get learning logs with optional date filter
+app.get('/api/youtube/learning-logs', async (req, res) => {
+  try {
+    const { start_date, end_date, limit = '100' } = req.query;
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    const limitNum = parseInt(limit as string, 10) || 100;
+
+    let result;
+    if (start_date && end_date) {
+      result = await sql`
+        SELECT * FROM youtube_learning_logs
+        WHERE started_at >= ${start_date as string}
+          AND started_at <= ${end_date as string}
+        ORDER BY started_at DESC
+        LIMIT ${limitNum}
+      `;
+    } else {
+      result = await sql`
+        SELECT * FROM youtube_learning_logs
+        ORDER BY started_at DESC
+        LIMIT ${limitNum}
+      `;
+    }
+
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching learning logs:', error);
+    return res.status(500).json({ error: 'Failed to fetch learning logs', success: false });
+  }
+});
+
+// Get learning statistics
+app.get('/api/youtube/learning-logs/stats', async (req, res) => {
+  try {
+    const { start_date, end_date } = req.query;
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+
+    let totalResult, sessionCountResult, uniqueVideosResult, dailyStatsResult;
+
+    if (start_date && end_date) {
+      totalResult = await sql`
+        SELECT COALESCE(SUM(duration_seconds), 0) as total_seconds
+        FROM youtube_learning_logs
+        WHERE started_at >= ${start_date as string} AND started_at <= ${end_date as string}
+      `;
+      sessionCountResult = await sql`
+        SELECT COUNT(*) as count
+        FROM youtube_learning_logs
+        WHERE started_at >= ${start_date as string} AND started_at <= ${end_date as string}
+      `;
+      uniqueVideosResult = await sql`
+        SELECT COUNT(DISTINCT video_id) as count
+        FROM youtube_learning_logs
+        WHERE started_at >= ${start_date as string} AND started_at <= ${end_date as string}
+      `;
+      dailyStatsResult = await sql`
+        SELECT
+          DATE(started_at AT TIME ZONE 'Asia/Tokyo') as date,
+          SUM(duration_seconds) as total_seconds,
+          COUNT(*) as session_count
+        FROM youtube_learning_logs
+        WHERE started_at >= ${start_date as string} AND started_at <= ${end_date as string}
+        GROUP BY DATE(started_at AT TIME ZONE 'Asia/Tokyo')
+        ORDER BY date DESC
+      `;
+    } else {
+      totalResult = await sql`
+        SELECT COALESCE(SUM(duration_seconds), 0) as total_seconds
+        FROM youtube_learning_logs
+      `;
+      sessionCountResult = await sql`
+        SELECT COUNT(*) as count
+        FROM youtube_learning_logs
+      `;
+      uniqueVideosResult = await sql`
+        SELECT COUNT(DISTINCT video_id) as count
+        FROM youtube_learning_logs
+      `;
+      dailyStatsResult = await sql`
+        SELECT
+          DATE(started_at AT TIME ZONE 'Asia/Tokyo') as date,
+          SUM(duration_seconds) as total_seconds,
+          COUNT(*) as session_count
+        FROM youtube_learning_logs
+        GROUP BY DATE(started_at AT TIME ZONE 'Asia/Tokyo')
+        ORDER BY date DESC
+        LIMIT 30
+      `;
+    }
+
+    const totalSeconds = parseInt(totalResult[0].total_seconds as string, 10);
+    const sessionCount = parseInt(sessionCountResult[0].count as string, 10);
+    const uniqueVideos = parseInt(uniqueVideosResult[0].count as string, 10);
+
+    return res.json({
+      success: true,
+      totalSeconds,
+      totalMinutes: Math.round(totalSeconds / 60),
+      totalHours: Math.round(totalSeconds / 3600 * 10) / 10,
+      sessionCount,
+      uniqueVideos,
+      dailyStats: dailyStatsResult.map((row: any) => ({
+        date: row.date,
+        totalSeconds: parseInt(row.total_seconds as string, 10),
+        sessionCount: parseInt(row.session_count as string, 10),
+      })),
+    });
+  } catch (error: any) {
+    console.error('Error fetching learning stats:', error);
+    return res.status(500).json({ error: 'Failed to fetch learning stats', success: false });
   }
 });
 
@@ -377,19 +1117,35 @@ app.use(
 const server = createServer(app);
 server.listen(PORT, () => {
   console.log(`
-╔════════════════════════════════════════════════════════════╗
-║       English Learning Hub - API Server                     ║
-║                                                            ║
-║   Server running on http://localhost:${PORT}                  ║
-║                                                            ║
-║   Endpoints:                                               ║
-║   • GET  /api/health              - Health check           ║
-║   • POST /api/study-logs          - Save study log         ║
-║   • GET  /api/study-logs          - Get study logs         ║
-║   • GET  /api/captions/:videoId   - YouTube captions       ║
-║   • GET  /api/unsplash            - Image search           ║
-║   • GET  /api/cambridge-dictionary - Cambridge dictionary  ║
-╚════════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════════╗
+║         English Learning Hub - API Server                      ║
+║                                                                ║
+║   Server running on http://localhost:${PORT}                      ║
+║                                                                ║
+║   Pages:                                                       ║
+║   • GET  /flashcards              - Flashcard review app       ║
+║   • GET  /youtube-learning        - YouTube learning app       ║
+║                                                                ║
+║   API Endpoints:                                               ║
+║   • GET  /api/health              - Health check               ║
+║   • POST /api/study-logs          - Save study log             ║
+║   • GET  /api/study-logs          - Get study logs             ║
+║   • POST /api/flashcards          - Create flashcard           ║
+║   • GET  /api/flashcards          - List flashcards            ║
+║   • GET  /api/flashcards/review   - Get cards due for review   ║
+║   • POST /api/flashcards/:id/review - Record review result     ║
+║   • GET  /api/flashcards/stats    - Get statistics             ║
+║   • POST /api/youtube/channels    - Register YouTube channel   ║
+║   • GET  /api/youtube/channels    - List registered channels   ║
+║   • DELETE /api/youtube/channels/:id - Remove channel          ║
+║   • GET  /api/youtube/videos      - Get random videos          ║
+║   • POST /api/youtube/learning-logs - Save learning log        ║
+║   • GET  /api/youtube/learning-logs - Get learning logs        ║
+║   • GET  /api/youtube/learning-logs/stats - Get statistics     ║
+║   • GET  /api/captions/:videoId   - YouTube captions           ║
+║   • GET  /api/unsplash            - Image search               ║
+║   • GET  /api/cambridge-dictionary - Cambridge dictionary      ║
+╚════════════════════════════════════════════════════════════════╝
   `);
 });
 
