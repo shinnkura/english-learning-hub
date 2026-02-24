@@ -45,6 +45,11 @@
       padding: 0;
     }
 
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+    }
+
     body {
       font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg-primary);
@@ -252,6 +257,8 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     /* Header */
@@ -1312,29 +1319,8 @@
         font-size: 11px;
       }
 
-      /* Header stats mobile */
+      /* Header stats mobile - hide on mobile, use stats-bar instead */
       .header-stats {
-        gap: 8px;
-      }
-
-      .header-stat {
-        padding: 6px 10px;
-        gap: 6px;
-      }
-
-      .header-stat-icon {
-        font-size: 12px;
-      }
-
-      .header-stat-value {
-        font-size: 13px;
-      }
-
-      .header-stat-unit {
-        font-size: 10px;
-      }
-
-      .header-stat-label {
         display: none;
       }
 
@@ -1613,9 +1599,25 @@
         margin-bottom: 16px;
       }
 
+      .resume-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .resume-info {
+        gap: 12px;
+      }
+
       .resume-thumbnail {
-        width: 70px;
-        height: 40px;
+        width: 60px;
+        height: 34px;
+        flex-shrink: 0;
+      }
+
+      .resume-details {
+        min-width: 0;
+        flex: 1;
       }
 
       .resume-label {
@@ -1624,10 +1626,17 @@
 
       .resume-title {
         font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .resume-meta {
         font-size: 11px;
+      }
+
+      .resume-actions {
+        justify-content: flex-end;
       }
 
       .resume-actions .btn {
@@ -1662,7 +1671,7 @@
 
       .input-field {
         padding: 12px 14px;
-        font-size: 14px;
+        font-size: 16px;
       }
 
       .btn {
@@ -2398,7 +2407,7 @@
       container.innerHTML = `
         <iframe
           id="yt-iframe"
-          src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1"
+          src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&rel=0&modestbranding=1"
           frameborder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
