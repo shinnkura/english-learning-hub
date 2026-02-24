@@ -99,7 +99,7 @@ app.get('/channels', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
 });
 
-app.get('/learn', (_req, res) => {
+app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
 });
 
