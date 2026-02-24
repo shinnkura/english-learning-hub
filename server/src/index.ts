@@ -17,12 +17,7 @@ import { neon } from '@neondatabase/serverless';
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-import { unlink, readFile } from 'node:fs/promises';
-import os from 'node:os';
-
-const execAsync = promisify(exec);
+import { YoutubeTranscript } from 'youtube-transcript';
 
 dotenv.config();
 
@@ -437,7 +432,7 @@ app.get('/api/flashcards/stats', async (req, res) => {
 });
 
 // ============================================
-// YouTube Captions API (using yt-dlp)
+// YouTube Captions API (using youtube-transcript)
 // ============================================
 
 app.get('/api/captions/:videoId', async (req, res) => {
@@ -466,51 +461,27 @@ app.get('/api/captions/:videoId', async (req, res) => {
     }
 
     try {
-      const tmpFile = `${os.tmpdir()}/caption_${videoId}_${Date.now()}`;
-      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: lang as string });
 
-      // Use yt-dlp to download subtitles
-      const cmd = `yt-dlp --write-auto-sub --sub-lang ${lang} --skip-download --sub-format json3 -o "${tmpFile}" "${videoUrl}" 2>&1`;
-
-      await execAsync(cmd, { timeout: 30000 });
-
-      const jsonFile = `${tmpFile}.${lang}.json3`;
-      const jsonContent = await readFile(jsonFile, 'utf-8');
-      const data = JSON.parse(jsonContent);
-
-      // Clean up temp file
-      await unlink(jsonFile).catch(() => {});
-
-      // Parse JSON3 format
-      const captions: Array<{ start: number; end: number; duration: number; text: string }> = [];
-
-      if (data.events) {
-        for (const event of data.events) {
-          if (event.segs && event.tStartMs !== undefined) {
-            const text = event.segs
-              .map((seg: any) => seg.utf8 || '')
-              .join('')
-              .replace(/\n/g, ' ')
-              .trim();
-
-            if (text) {
-              const startMs = event.tStartMs;
-              const durationMs = event.dDurationMs || 2000;
-
-              captions.push({
-                start: startMs / 1000,
-                end: (startMs + durationMs) / 1000,
-                duration: durationMs / 1000,
-                text,
-              });
-            }
-          }
-        }
-      }
-
-      if (captions.length === 0) {
+      if (!transcript || transcript.length === 0) {
         throw new Error('No captions found');
       }
+
+      const captions = transcript.map((item: any) => ({
+        start: item.offset / 1000, // Convert ms to seconds
+        duration: item.duration / 1000,
+        end: (item.offset + item.duration) / 1000,
+        text: item.text
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/\n/g, ' ')
+          .trim(),
+      }));
+
+      console.log('Successfully fetched', captions.length, 'captions using youtube-transcript');
 
       const response = { captions, languageCode: lang as string };
       await cache.set(cacheKey, response);
@@ -518,7 +489,7 @@ app.get('/api/captions/:videoId', async (req, res) => {
     } catch (error: any) {
       console.error('Error fetching captions:', error.message);
 
-      if (error.message?.includes('No captions found') || error.message?.includes('ENOENT')) {
+      if (error.message?.includes('No captions found') || error.message?.includes('Could not')) {
         await errorCache.set(videoId, true);
         return res.status(404).json({
           error: 'Captions not available for this video.',

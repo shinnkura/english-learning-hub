@@ -13,110 +13,37 @@ import rateLimit from 'express-rate-limit';
 import { neon } from '@neondatabase/serverless';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-// Helper function to fetch YouTube captions using timedtext XML API
+import { YoutubeTranscript } from 'youtube-transcript';
+
+// Helper function to fetch YouTube captions using youtube-transcript package
 async function fetchYouTubeCaptions(videoId: string, lang: string): Promise<Array<{ start: number; duration: number; end: number; text: string }>> {
-  // Fetch the YouTube video page to extract caption track URL
-  const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-    },
-  });
-
-  if (!videoPageResponse.ok) {
-    throw new Error(`Failed to fetch video page: ${videoPageResponse.status}`);
-  }
-
-  const html = await videoPageResponse.text();
-
-  // More robust regex patterns to capture caption tracks
-  const captionTracksMatch = html.match(/"captionTracks":(\[.*?\]),"audioTracks"/s) ||
-                              html.match(/"captionTracks":(\[.*?\]),"translationLanguages"/s) ||
-                              html.match(/"captionTracks":\s*(\[[^\]]+\])/);
-  if (!captionTracksMatch) {
-    console.error('No captionTracks found in HTML. HTML length:', html.length);
-    throw new Error('No captions found for this video');
-  }
-
-  // Parse caption tracks (handle unicode escapes)
-  const captionTracksJson = captionTracksMatch[1].replace(/\\u0026/g, '&');
-  let captionTracks;
   try {
-    captionTracks = JSON.parse(captionTracksJson);
-  } catch (e) {
-    console.error('Failed to parse caption tracks JSON:', captionTracksJson.substring(0, 200));
-    throw new Error('Failed to parse caption data');
-  }
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang });
 
-  // Find the requested language track
-  let track = captionTracks.find((t: any) => t.languageCode === lang);
-  if (!track) {
-    track = captionTracks[0];
-    if (!track) {
+    if (!transcript || transcript.length === 0) {
       throw new Error('No captions found for this video');
     }
+
+    const captions = transcript.map((item: any) => ({
+      start: item.offset / 1000, // Convert ms to seconds
+      duration: item.duration / 1000,
+      end: (item.offset + item.duration) / 1000,
+      text: item.text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\n/g, ' ')
+        .trim(),
+    }));
+
+    console.log('Successfully fetched', captions.length, 'captions using youtube-transcript');
+    return captions;
+  } catch (error: any) {
+    console.error('youtube-transcript error:', error.message);
+    throw new Error('No captions found for this video');
   }
-
-  // Try fetching with XML format first (more reliable server-side)
-  const captionUrl = track.baseUrl;
-  console.log('Fetching captions from:', captionUrl.substring(0, 100));
-
-  const captionResponse = await fetch(captionUrl, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': '*/*',
-    },
-  });
-
-  if (!captionResponse.ok) {
-    throw new Error(`Failed to fetch captions: ${captionResponse.status}`);
-  }
-
-  const xmlText = await captionResponse.text();
-  console.log('Caption response length:', xmlText.length);
-
-  if (xmlText.length === 0) {
-    throw new Error('Empty caption response from YouTube');
-  }
-
-  // Parse XML format (default timedtext format)
-  const captions: Array<{ start: number; duration: number; end: number; text: string }> = [];
-
-  // Parse XML: <text start="0.48" dur="4.799">caption text</text>
-  const textRegex = /<text start="([\d.]+)" dur="([\d.]+)"[^>]*>(.*?)<\/text>/gs;
-  let match;
-
-  while ((match = textRegex.exec(xmlText)) !== null) {
-    const start = parseFloat(match[1]);
-    const duration = parseFloat(match[2]);
-    // Decode HTML entities and clean up text
-    let text = match[3]
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\n/g, ' ')
-      .trim();
-
-    if (text) {
-      captions.push({
-        start,
-        duration,
-        end: start + duration,
-        text,
-      });
-    }
-  }
-
-  if (captions.length === 0) {
-    console.error('No captions parsed from XML. First 500 chars:', xmlText.substring(0, 500));
-    throw new Error('No captions found');
-  }
-
-  console.log('Successfully parsed', captions.length, 'captions');
-  return captions;
 }
 
 const __filename = fileURLToPath(import.meta.url);
