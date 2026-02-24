@@ -1,10 +1,15 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/youtube-learning.html" },
-    { "source": "/channels", "destination": "/youtube-learning.html" },
-    { "source": "/history", "destination": "/youtube-learning.html" },
-    { "source": "/flashcards", "destination": "/flashcards.html" },
-    { "source": "/youtube-learning", "destination": "/youtube-learning.html" },
-    { "source": "/api/(.*)", "destination": "/api" }
+  "version": 2,
+  "builds": [
+    { "src": "api/index.ts", "use": "@vercel/node" },
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "^/$", "dest": "/public/youtube-learning.html" },
+    { "src": "^/channels$", "dest": "/public/youtube-learning.html" },
+    { "src": "^/history$", "dest": "/public/youtube-learning.html" },
+    { "src": "^/flashcards$", "dest": "/public/flashcards.html" },
+    { "src": "^/youtube-learning$", "dest": "/public/youtube-learning.html" },
+    { "src": "^/api/(.*)", "dest": "/api/index.ts" }
   ]
 }
