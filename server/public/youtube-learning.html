@@ -108,6 +108,35 @@
     .sidebar-header {
       padding: 24px 20px;
       border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-close-btn {
+      display: none;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: var(--bg-glass);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-close-btn:hover {
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar-close-btn {
+        display: flex;
+      }
     }
 
     .logo {
@@ -1414,6 +1443,39 @@
         font-size: 13px;
       }
 
+      /* Sidebar mobile improvements */
+      .sidebar {
+        z-index: 1000;
+      }
+
+      .sidebar-header {
+        padding: 16px;
+      }
+
+      .logo-title {
+        font-size: 16px;
+      }
+
+      .logo-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+      }
+
+      .nav-menu {
+        padding: 12px 8px;
+      }
+
+      .nav-item {
+        padding: 14px 16px;
+        font-size: 15px;
+        border-radius: var(--radius-md);
+      }
+
+      .nav-icon {
+        font-size: 18px;
+      }
+
       /* History page */
       .history-grid {
         gap: 16px;
@@ -1588,8 +1650,9 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 99;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 999;
+      -webkit-tap-highlight-color: transparent;
     }
 
     @media (max-width: 768px) {
@@ -1602,7 +1665,7 @@
 <body>
   <div class="app-container">
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="logo">
           <div class="logo-icon">📺</div>
@@ -1611,6 +1674,7 @@
             <span class="logo-subtitle">English Learning Hub</span>
           </div>
         </div>
+        <button class="sidebar-close-btn" onclick="closeMobileMenu()">✕</button>
       </div>
 
       <nav class="nav-menu">
@@ -2691,17 +2755,25 @@
 
     // Mobile menu functions
     function toggleMobileMenu() {
-      const sidebar = document.querySelector('.sidebar');
+      const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebar-overlay');
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('open');
+      const isOpen = sidebar.classList.contains('open');
+
+      if (isOpen) {
+        closeMobileMenu();
+      } else {
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
     }
 
     function closeMobileMenu() {
-      const sidebar = document.querySelector('.sidebar');
+      const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebar-overlay');
       sidebar.classList.remove('open');
       overlay.classList.remove('open');
+      document.body.style.overflow = '';
     }
 
     // Close mobile menu when nav item is clicked
