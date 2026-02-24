@@ -2290,10 +2290,11 @@
       title.textContent = displayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
       try {
-        const startDate = dateStr + 'T00:00:00+09:00';
-        const endDate = dateStr + 'T23:59:59+09:00';
+        // Use Japan timezone offset (UTC+9) - convert to UTC for query
+        const startDate = new Date(dateStr + 'T00:00:00+09:00').toISOString();
+        const endDate = new Date(dateStr + 'T23:59:59+09:00').toISOString();
 
-        const response = await fetch(`${API_BASE}/api/youtube/learning-logs?start_date=${startDate}&end_date=${endDate}`);
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`);
         const data = await response.json();
 
         if (!data.data || data.data.length === 0) {
