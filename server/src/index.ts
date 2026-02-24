@@ -94,6 +94,19 @@ app.get('/youtube-learning', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
 });
 
+// YouTube learning routes (channels, learn, history)
+app.get('/channels', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
+});
+
+app.get('/learn', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
+});
+
+app.get('/history', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
+});
+
 // ============================================
 // Health Check
 // ============================================
