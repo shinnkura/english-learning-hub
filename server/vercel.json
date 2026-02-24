@@ -1,10 +1,10 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/flashcards", "destination": "/public/flashcards.html" },
-    { "source": "/youtube-learning", "destination": "/public/youtube-learning.html" },
+    { "source": "/", "destination": "/public/youtube-learning.html" },
     { "source": "/channels", "destination": "/public/youtube-learning.html" },
     { "source": "/history", "destination": "/public/youtube-learning.html" },
-    { "source": "/", "destination": "/public/youtube-learning.html" }
+    { "source": "/flashcards", "destination": "/public/flashcards.html" },
+    { "source": "/youtube-learning", "destination": "/public/youtube-learning.html" },
+    { "source": "/api/(.*)", "destination": "/api" }
   ]
 }
