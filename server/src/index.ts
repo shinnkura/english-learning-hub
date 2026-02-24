@@ -29,6 +29,11 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 開発時はsrcフォルダ、ビルド後はdistフォルダを考慮してpublicフォルダを解決
+const publicDir = __dirname.endsWith('/src') || __dirname.endsWith('\\src')
+  ? path.join(__dirname, '..', 'public')
+  : path.join(__dirname, 'public');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -82,29 +87,29 @@ app.use('/api', limiter);
 // ============================================
 
 // Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(publicDir));
 
 // Flashcard review page
 app.get('/flashcards', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'public/flashcards.html'));
+  res.sendFile(path.join(publicDir, 'flashcards.html'));
 });
 
 // YouTube learning page
 app.get('/youtube-learning', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
+  res.sendFile(path.join(publicDir, 'youtube-learning.html'));
 });
 
 // YouTube learning routes (channels, learn, history)
 app.get('/channels', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
+  res.sendFile(path.join(publicDir, 'youtube-learning.html'));
 });
 
 app.get('/', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
+  res.sendFile(path.join(publicDir, 'youtube-learning.html'));
 });
 
 app.get('/history', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'public/youtube-learning.html'));
+  res.sendFile(path.join(publicDir, 'youtube-learning.html'));
 });
 
 // ============================================
