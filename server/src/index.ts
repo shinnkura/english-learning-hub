@@ -767,8 +767,9 @@ app.delete('/api/youtube/channels/:id', async (req, res) => {
 // Get random videos from registered channels
 app.get('/api/youtube/videos', async (req, res) => {
   try {
-    const { limit = '10' } = req.query;
+    const { limit = '10', exclude_watched = 'true' } = req.query;
     const limitNum = Math.min(parseInt(limit as string, 10) || 10, 50);
+    const shouldExcludeWatched = exclude_watched !== 'false';
 
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
@@ -781,6 +782,14 @@ app.get('/api/youtube/videos', async (req, res) => {
     }
 
     const sql = neon(databaseUrl);
+
+    // Get watched video IDs to exclude
+    let watchedVideoIds: Set<string> = new Set();
+    if (shouldExcludeWatched) {
+      const watchedVideos = await sql`SELECT DISTINCT video_id FROM youtube_learning_logs`;
+      watchedVideoIds = new Set(watchedVideos.map((v: any) => v.video_id));
+    }
+
     const channels = await sql`SELECT channel_id, channel_name FROM youtube_channels`;
 
     if (channels.length === 0) {
@@ -841,11 +850,21 @@ app.get('/api/youtube/videos', async (req, res) => {
       await cache.set(cacheKey, allVideos, 60 * 60 * 1000);
     }
 
+    // Filter out watched videos if requested
+    let availableVideos = cachedVideos;
+    if (shouldExcludeWatched && watchedVideoIds.size > 0) {
+      availableVideos = cachedVideos.filter((video: any) => !watchedVideoIds.has(video.videoId));
+    }
+
     // Shuffle and return random videos
-    const shuffled = [...cachedVideos].sort(() => Math.random() - 0.5);
+    const shuffled = [...availableVideos].sort(() => Math.random() - 0.5);
     const selectedVideos = shuffled.slice(0, limitNum);
 
-    return res.json({ success: true, data: selectedVideos });
+    return res.json({
+      success: true,
+      data: selectedVideos,
+      excludedCount: cachedVideos.length - availableVideos.length,
+    });
   } catch (error: any) {
     console.error('Error fetching videos:', error);
     return res.status(500).json({ error: 'Failed to fetch videos', success: false });

@@ -598,8 +598,9 @@ app.delete('/api/youtube/channels/:id', async (req, res) => {
 
 app.get('/api/youtube/videos', async (req, res) => {
   try {
-    const { limit = '10' } = req.query;
+    const { limit = '10', exclude_watched = 'true' } = req.query;
     const limitNum = Math.min(parseInt(limit as string, 10) || 10, 50);
+    const shouldExcludeWatched = exclude_watched !== 'false';
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: 'YouTube API key not configured', success: false });
@@ -609,6 +610,14 @@ app.get('/api/youtube/videos', async (req, res) => {
       return res.status(500).json({ error: 'Database not configured', success: false });
     }
     const sql = neon(databaseUrl);
+
+    // Get watched video IDs to exclude
+    let watchedVideoIds: Set<string> = new Set();
+    if (shouldExcludeWatched) {
+      const watchedVideos = await sql`SELECT DISTINCT video_id FROM youtube_learning_logs`;
+      watchedVideoIds = new Set(watchedVideos.map((v: any) => v.video_id));
+    }
+
     const channels = await sql`SELECT channel_id, channel_name FROM youtube_channels`;
     if (channels.length === 0) {
       return res.json({ success: true, data: [], message: 'No channels registered' });
@@ -651,8 +660,19 @@ app.get('/api/youtube/videos', async (req, res) => {
       cachedVideos = allVideos;
       await cache.set(cacheKey, allVideos, 60 * 60 * 1000);
     }
-    const shuffled = [...cachedVideos].sort(() => Math.random() - 0.5);
-    return res.json({ success: true, data: shuffled.slice(0, limitNum) });
+
+    // Filter out watched videos if requested
+    let availableVideos = cachedVideos;
+    if (shouldExcludeWatched && watchedVideoIds.size > 0) {
+      availableVideos = cachedVideos.filter((video: any) => !watchedVideoIds.has(video.videoId));
+    }
+
+    const shuffled = [...availableVideos].sort(() => Math.random() - 0.5);
+    return res.json({
+      success: true,
+      data: shuffled.slice(0, limitNum),
+      excludedCount: cachedVideos.length - availableVideos.length,
+    });
   } catch (error: any) {
     console.error('Error fetching videos:', error);
     return res.status(500).json({ error: 'Failed to fetch videos', success: false });
