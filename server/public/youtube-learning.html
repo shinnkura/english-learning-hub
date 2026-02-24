@@ -2191,11 +2191,20 @@
         dailyStats = {};
         if (data.dailyStats) {
           data.dailyStats.forEach(stat => {
-            dailyStats[stat.date] = stat;
+            // Ensure date format is YYYY-MM-DD
+            const dateStr = typeof stat.date === 'string' ? stat.date.split('T')[0] : stat.date;
+            dailyStats[dateStr] = stat;
           });
         }
 
         renderCalendar();
+
+        // Auto-select today's date
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        if (!selectedDate) {
+          selectDate(todayStr);
+        }
       } catch (error) {
         console.error('Error loading history:', error);
       }
@@ -2281,7 +2290,7 @@
         }
 
         container.innerHTML = data.data.map(log => `
-          <div class="history-item">
+          <div class="history-item" onclick="playHistoryVideo('${escapeHtml(log.video_id)}', '${escapeHtml(log.video_title).replace(/'/g, "\\'")}', '${escapeHtml(log.channel_id || '')}', '${escapeHtml(log.channel_name || '').replace(/'/g, "\\'")}', '${escapeHtml(log.thumbnail_url || '')}')" style="cursor: pointer;">
             <img class="history-item-thumbnail" src="${escapeHtml(log.thumbnail_url || '')}" alt="" onerror="this.style.display='none'">
             <div class="history-item-info">
               <div class="history-item-title">${escapeHtml(log.video_title)}</div>
@@ -2289,12 +2298,59 @@
                 ${escapeHtml(log.channel_name || '')} · ${formatDuration(log.duration_seconds)} learned
               </div>
             </div>
+            <div class="history-item-play" style="flex-shrink: 0; width: 36px; height: 36px; background: var(--accent-gold-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent-gold); font-size: 14px;">▶</div>
           </div>
         `).join('');
       } catch (error) {
         console.error('Error loading day details:', error);
         container.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--error);">Failed to load details</div>';
       }
+    }
+
+    // ==========================================
+    // Play History Video
+    // ==========================================
+
+    function playHistoryVideo(videoId, title, channelId, channelName, thumbnail) {
+      // Create a video object to play
+      currentVideo = {
+        videoId: videoId,
+        title: title,
+        channelId: channelId,
+        channelName: channelName,
+        thumbnail: thumbnail,
+        durationSeconds: 0 // Unknown duration for history videos
+      };
+
+      // Switch to Learn tab and start playing
+      switchTab('learn');
+
+      // Hide resume banner if visible
+      if (window.resumeElapsedInterval) {
+        clearInterval(window.resumeElapsedInterval);
+        window.resumeElapsedInterval = null;
+      }
+      document.getElementById('resume-banner').style.display = 'none';
+
+      document.getElementById('video-selection').style.display = 'none';
+      document.getElementById('player-view').classList.add('active');
+      document.getElementById('player-title').textContent = currentVideo.title;
+
+      // Reset accumulated time for new video
+      accumulatedLearningSeconds = 0;
+      accumulatedSessionSeconds = 0;
+      isPaused = false;
+
+      learningStartTime = new Date();
+      startTimer();
+
+      // Save session to localStorage
+      saveSession();
+
+      loadYouTubePlayer(videoId);
+      loadCaptions(videoId);
+
+      showToast('Playing video from history');
     }
 
     // ==========================================
