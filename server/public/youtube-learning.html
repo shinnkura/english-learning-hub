@@ -1984,167 +1984,573 @@
       flex: 1;
     }
 
-    /* Review Cards - Minimal */
-    .review-stats-grid {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
+    /* ============================================
+       Review Tab - Refined Editorial Design
+       ============================================ */
+
+    /* Review Hero Section */
+    .review-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
     }
 
-    .review-stat-card {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 10px 16px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .review-stat-card:hover {
-      background: var(--bg-glass);
-    }
-
-    .review-stat-card.active {
-      border-color: var(--text-muted);
-      background: var(--bg-glass);
-    }
-
-    .review-stat-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .review-stat-label {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    /* Recommended Reviews Section */
-    .recommended-section {
-      margin-bottom: 32px;
-    }
-
-    .recommended-header {
+    /* Progress Ring Card */
+    .review-progress-card {
+      background: linear-gradient(135deg, rgba(45, 212, 191, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%);
+      border: 1px solid rgba(45, 212, 191, 0.15);
+      border-radius: var(--radius-xl);
+      padding: 32px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 32px;
+      position: relative;
+      overflow: hidden;
     }
 
-    .recommended-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--error-soft);
-      color: var(--error);
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
-      font-weight: 600;
+    .review-progress-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.1) 0%, transparent 70%);
+      pointer-events: none;
     }
 
-    .review-video-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .review-video-item {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 16px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .review-video-item:hover {
-      border-color: var(--accent-gold);
-      transform: translateX(4px);
-    }
-
-    .review-video-thumbnail {
+    .progress-ring-container {
+      position: relative;
       width: 120px;
-      height: 68px;
-      border-radius: var(--radius-sm);
-      object-fit: cover;
+      height: 120px;
       flex-shrink: 0;
     }
 
-    .review-video-info {
-      flex: 1;
-      min-width: 0;
+    .progress-ring {
+      transform: rotate(-90deg);
     }
 
-    .review-video-title {
+    .progress-ring-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.08);
+      stroke-width: 8;
+    }
+
+    .progress-ring-fill {
+      fill: none;
+      stroke: url(#progressGradient);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 314;
+      stroke-dashoffset: 314;
+      transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-ring-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .progress-ring-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .progress-ring-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 4px;
+    }
+
+    .progress-info {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+
+    .progress-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent-teal);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .progress-headline {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+
+    .progress-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Due Today Card */
+    .review-due-card {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(245, 166, 35, 0.08) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .review-due-card::before {
+      content: '';
+      position: absolute;
+      bottom: -40%;
+      left: -20%;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .review-due-card.empty {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(45, 212, 191, 0.05) 100%);
+      border-color: rgba(34, 197, 94, 0.15);
+    }
+
+    .review-due-card.empty::before {
+      background: radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+    }
+
+    .due-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .due-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .due-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .due-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .due-action:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    /* Filter Pills */
+    .review-filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .filter-pill::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.03) 100%);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .filter-pill:hover::before {
+      opacity: 1;
+    }
+
+    .filter-pill:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .filter-pill.active {
+      background: var(--bg-glass);
+      border-color: var(--text-muted);
+    }
+
+    .filter-pill[data-filter="easy"].active {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.08) 100%);
+      border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    .filter-pill[data-filter="normal"].active {
+      background: linear-gradient(135deg, rgba(245, 166, 35, 0.15) 0%, rgba(245, 166, 35, 0.08) 100%);
+      border-color: rgba(245, 166, 35, 0.4);
+    }
+
+    .filter-pill[data-filter="difficult"].active {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .filter-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .filter-pill[data-filter="easy"] .filter-dot {
+      background: var(--success);
+    }
+
+    .filter-pill[data-filter="normal"] .filter-dot {
+      background: var(--accent-gold);
+    }
+
+    .filter-pill[data-filter="difficult"] .filter-dot {
+      background: var(--error);
+    }
+
+    .filter-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .filter-pill.active .filter-label {
+      color: var(--text-primary);
+    }
+
+    .filter-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .filter-pill.active .filter-count {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+    }
+
+    /* Video Grid Layout */
+    .review-video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .review-video-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .review-video-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .review-video-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .review-video-card:hover::after {
+      opacity: 1;
+    }
+
+    .review-card-thumbnail {
+      position: relative;
+      aspect-ratio: 16/9;
+      overflow: hidden;
+    }
+
+    .review-card-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .review-video-card:hover .review-card-thumbnail img {
+      transform: scale(1.05);
+    }
+
+    .review-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+      display: flex;
+      align-items: flex-end;
+      padding: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .review-video-card:hover .review-card-overlay {
+      opacity: 1;
+    }
+
+    .review-play-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0c0f1a;
+      font-size: 20px;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .review-video-card:hover .review-play-btn {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .review-card-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    .review-card-badge.easy {
+      background: rgba(34, 197, 94, 0.9);
+      color: #fff;
+    }
+
+    .review-card-badge.normal {
+      background: rgba(245, 166, 35, 0.9);
+      color: #0c0f1a;
+    }
+
+    .review-card-badge.difficult {
+      background: rgba(239, 68, 68, 0.9);
+      color: #fff;
+    }
+
+    .review-card-due {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    .review-card-due.overdue {
+      background: rgba(239, 68, 68, 0.8);
+      color: #fff;
+    }
+
+    .review-card-body {
+      padding: 16px;
+    }
+
+    .review-card-title {
       font-size: 14px;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 4px;
+      line-height: 1.4;
+      margin-bottom: 8px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
 
-    .review-video-meta {
+    .review-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       font-size: 12px;
       color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
 
-    .review-video-difficulty {
-      display: inline-flex;
+    .review-card-channel {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .review-card-stats {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .review-card-stat {
+      display: flex;
       align-items: center;
       gap: 4px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 11px;
+    }
+
+    /* Empty State */
+    .review-empty {
+      text-align: center;
+      padding: 80px 40px;
+    }
+
+    .review-empty-icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+      opacity: 0.6;
+    }
+
+    .review-empty-title {
+      font-size: 20px;
       font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
     }
 
-    .review-video-difficulty.easy {
-      background: var(--success-soft);
-      color: var(--success);
+    .review-empty-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 360px;
+      margin: 0 auto;
+      line-height: 1.6;
     }
 
-    .review-video-difficulty.normal {
-      background: var(--accent-gold-soft);
-      color: var(--accent-gold);
+    /* Old classes kept for compatibility but hidden */
+    .review-stats-grid { display: none; }
+    .recommended-section { display: none !important; }
+    .review-video-list { display: none; }
+
+    @media (max-width: 900px) {
+      .review-hero {
+        grid-template-columns: 1fr;
+      }
     }
 
-    .review-video-difficulty.difficult {
-      background: var(--error-soft);
-      color: var(--error);
-    }
+    @media (max-width: 768px) {
+      .review-hero {
+        gap: 16px;
+        margin-bottom: 28px;
+      }
 
-    .review-video-play {
-      width: 44px;
-      height: 44px;
-      background: var(--accent-gold-soft);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--accent-gold);
-      font-size: 16px;
-      flex-shrink: 0;
-      transition: all 0.2s ease;
-    }
+      .review-progress-card {
+        padding: 24px;
+        gap: 20px;
+        flex-direction: column;
+        text-align: center;
+      }
 
-    .review-video-item:hover .review-video-play {
-      background: var(--accent-gold);
-      color: #0c0f1a;
+      .progress-ring-container {
+        width: 100px;
+        height: 100px;
+      }
+
+      .progress-ring-value {
+        font-size: 24px;
+      }
+
+      .progress-headline {
+        font-size: 18px;
+      }
+
+      .review-due-card {
+        padding: 24px;
+      }
+
+      .due-count {
+        font-size: 36px;
+      }
+
+      .review-filters {
+        gap: 8px;
+      }
+
+      .filter-pill {
+        padding: 10px 14px;
+        gap: 8px;
+      }
+
+      .filter-label {
+        font-size: 12px;
+      }
+
+      .review-video-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
     }
 
     @media (max-width: 768px) {
@@ -2400,51 +2806,76 @@
 
       <!-- Review Tab -->
       <div class="tab-content" id="review-tab">
-        <!-- Stats Cards -->
-        <div class="review-stats-grid">
-          <div class="review-stat-card active" data-filter="all" onclick="filterReviews('all')">
-            <div class="review-stat-label">All</div>
-            <div class="review-stat-value" id="review-total">0</div>
+        <!-- SVG Gradient Definition -->
+        <svg width="0" height="0" style="position: absolute;">
+          <defs>
+            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2dd4bf"/>
+              <stop offset="100%" stop-color="#6366f1"/>
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <!-- Hero Section -->
+        <div class="review-hero">
+          <!-- Progress Card -->
+          <div class="review-progress-card">
+            <div class="progress-ring-container">
+              <svg class="progress-ring" width="120" height="120">
+                <circle class="progress-ring-bg" cx="60" cy="60" r="50"/>
+                <circle class="progress-ring-fill" id="progress-ring-fill" cx="60" cy="60" r="50"/>
+              </svg>
+              <div class="progress-ring-center">
+                <div class="progress-ring-value" id="review-total">0</div>
+                <div class="progress-ring-label">Videos</div>
+              </div>
+            </div>
+            <div class="progress-info">
+              <div class="progress-title">Your Library</div>
+              <div class="progress-headline">Spaced Repetition Learning</div>
+              <div class="progress-desc">Videos are scheduled for review based on difficulty ratings using the Ebbinghaus forgetting curve.</div>
+            </div>
           </div>
-          <div class="review-stat-card" data-filter="easy" onclick="filterReviews('easy')">
-            <div class="review-stat-label">Easy</div>
-            <div class="review-stat-value" id="review-easy">0</div>
-          </div>
-          <div class="review-stat-card" data-filter="normal" onclick="filterReviews('normal')">
-            <div class="review-stat-label">Normal</div>
-            <div class="review-stat-value" id="review-normal">0</div>
-          </div>
-          <div class="review-stat-card" data-filter="difficult" onclick="filterReviews('difficult')">
-            <div class="review-stat-label">Difficult</div>
-            <div class="review-stat-value" id="review-difficult">0</div>
+
+          <!-- Due Today Card -->
+          <div class="review-due-card" id="review-due-card">
+            <div class="due-icon">🔔</div>
+            <div class="due-count" id="due-count">0</div>
+            <div class="due-label">videos due for review today</div>
+            <button class="due-action" onclick="filterReviews('due')">
+              <span>▶</span>
+              Start Review Session
+            </button>
           </div>
         </div>
 
-        <!-- Recommended Reviews -->
-        <div class="recommended-section" id="recommended-section" style="display: none;">
-          <div class="recommended-header">
-            <h2 class="section-title">Today's Recommended Reviews</h2>
-            <span class="recommended-badge" id="due-badge">
-              <span>🔔</span>
-              <span id="due-count">0</span> due
-            </span>
+        <!-- Filter Pills -->
+        <div class="review-filters">
+          <div class="filter-pill active" data-filter="all" onclick="filterReviews('all')">
+            <span class="filter-dot"></span>
+            <span class="filter-label">All Videos</span>
+            <span class="filter-count" id="filter-count-all">0</span>
           </div>
-          <div class="review-video-list" id="recommended-list"></div>
+          <div class="filter-pill" data-filter="easy" onclick="filterReviews('easy')">
+            <span class="filter-dot"></span>
+            <span class="filter-label">Easy</span>
+            <span class="filter-count" id="review-easy">0</span>
+          </div>
+          <div class="filter-pill" data-filter="normal" onclick="filterReviews('normal')">
+            <span class="filter-dot"></span>
+            <span class="filter-label">Normal</span>
+            <span class="filter-count" id="review-normal">0</span>
+          </div>
+          <div class="filter-pill" data-filter="difficult" onclick="filterReviews('difficult')">
+            <span class="filter-dot"></span>
+            <span class="filter-label">Difficult</span>
+            <span class="filter-count" id="review-difficult">0</span>
+          </div>
         </div>
 
-        <!-- All Reviews -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">
-              <div class="card-title-icon">📺</div>
-              <span id="review-list-title">All Videos</span>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="review-video-list" id="review-list">
-              <div class="loading">Loading reviews</div>
-            </div>
-          </div>
+        <!-- Video Grid -->
+        <div class="review-video-grid" id="review-video-grid">
+          <div class="loading">Loading reviews</div>
         </div>
       </div>
 
@@ -3452,10 +3883,11 @@
     // Review Tab Functions
     // ==========================================
 
+    let reviewData = { all: [], easy: [], normal: [], difficult: [], due: [] };
+
     async function loadReviews() {
       await loadReviewStats();
-      await loadRecommendedReviews();
-      await loadReviewList();
+      await loadReviewVideoGrid();
     }
 
     async function loadReviewStats() {
@@ -3465,108 +3897,114 @@
 
         if (data.success) {
           const total = data.easy + data.normal + data.difficult;
+
+          // Update progress ring
           document.getElementById('review-total').textContent = total;
+          const circumference = 314; // 2 * PI * 50
+          const progress = total > 0 ? 1 : 0;
+          const ringFill = document.getElementById('progress-ring-fill');
+          if (ringFill) {
+            ringFill.style.strokeDashoffset = circumference * (1 - progress);
+          }
+
+          // Update filter counts
+          const allCountEl = document.getElementById('filter-count-all');
+          if (allCountEl) allCountEl.textContent = total;
           document.getElementById('review-easy').textContent = data.easy;
           document.getElementById('review-normal').textContent = data.normal;
           document.getElementById('review-difficult').textContent = data.difficult;
-          document.getElementById('due-count').textContent = data.dueForReview;
+
+          // Update due card
+          const dueCount = data.dueForReview;
+          document.getElementById('due-count').textContent = dueCount;
+          const dueCard = document.getElementById('review-due-card');
+          if (dueCard) {
+            if (dueCount === 0) {
+              dueCard.classList.add('empty');
+              dueCard.querySelector('.due-icon').textContent = '✨';
+              dueCard.querySelector('.due-label').textContent = 'All caught up! No reviews due.';
+              dueCard.querySelector('.due-action').style.display = 'none';
+            } else {
+              dueCard.classList.remove('empty');
+              dueCard.querySelector('.due-icon').textContent = '🔔';
+              dueCard.querySelector('.due-label').textContent = `video${dueCount !== 1 ? 's' : ''} due for review today`;
+              dueCard.querySelector('.due-action').style.display = 'inline-flex';
+            }
+          }
         }
       } catch (error) {
         console.error('Error loading review stats:', error);
       }
     }
 
-    async function loadRecommendedReviews() {
-      const section = document.getElementById('recommended-section');
-      const container = document.getElementById('recommended-list');
+    async function loadReviewVideoGrid(filter = currentReviewFilter) {
+      const container = document.getElementById('review-video-grid');
+      if (!container) return;
 
       try {
-        const response = await fetch(`${API_BASE}/api/youtube/reviews/recommended`);
-        const data = await response.json();
-
-        if (data.success && data.data && data.data.length > 0) {
-          section.style.display = 'block';
-          container.innerHTML = data.data.map(review => renderReviewItem(review)).join('');
-        } else {
-          section.style.display = 'none';
+        let url = `${API_BASE}/api/youtube/reviews`;
+        if (filter === 'due') {
+          url = `${API_BASE}/api/youtube/reviews/recommended`;
+        } else if (filter !== 'all') {
+          url = `${API_BASE}/api/youtube/reviews?difficulty=${filter}`;
         }
-      } catch (error) {
-        console.error('Error loading recommended reviews:', error);
-        section.style.display = 'none';
-      }
-    }
-
-    async function loadReviewList(filter = currentReviewFilter) {
-      const container = document.getElementById('review-list');
-      const titleEl = document.getElementById('review-list-title');
-
-      const filterLabels = {
-        all: 'All Videos',
-        easy: 'Easy Videos',
-        normal: 'Normal Videos',
-        difficult: 'Difficult Videos'
-      };
-      titleEl.textContent = filterLabels[filter] || 'All Videos';
-
-      try {
-        const url = filter === 'all'
-          ? `${API_BASE}/api/youtube/reviews`
-          : `${API_BASE}/api/youtube/reviews?difficulty=${filter}`;
 
         const response = await fetch(url);
         const data = await response.json();
 
         if (!data.success || !data.data || data.data.length === 0) {
           container.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-              <div style="font-size: 32px; margin-bottom: 12px;">📚</div>
-              <div>No videos found</div>
-              <div style="font-size: 13px; margin-top: 8px;">Watch some videos and rate their difficulty to see them here</div>
+            <div class="review-empty" style="grid-column: 1 / -1;">
+              <div class="review-empty-icon">${filter === 'due' ? '✨' : '📚'}</div>
+              <div class="review-empty-title">${filter === 'due' ? 'All caught up!' : 'No videos found'}</div>
+              <div class="review-empty-desc">${filter === 'due' ? 'You have no videos due for review. Great job staying on track!' : 'Watch some videos and rate their difficulty to see them here.'}</div>
             </div>
           `;
           return;
         }
 
-        container.innerHTML = data.data.map(review => renderReviewItem(review)).join('');
+        container.innerHTML = data.data.map(review => renderReviewCard(review)).join('');
       } catch (error) {
-        console.error('Error loading review list:', error);
-        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--error);">Failed to load reviews</div>';
+        console.error('Error loading review grid:', error);
+        container.innerHTML = '<div class="review-empty" style="grid-column: 1 / -1;"><div class="review-empty-icon">⚠️</div><div class="review-empty-title">Failed to load</div></div>';
       }
     }
 
-    function renderReviewItem(review) {
-      const difficultyIcons = { easy: '😊', normal: '📝', difficult: '🔥' };
+    function renderReviewCard(review) {
       const difficultyLabels = { easy: 'Easy', normal: 'Normal', difficult: 'Difficult' };
 
       const nextReview = review.next_review_at ? new Date(review.next_review_at) : null;
       const now = new Date();
-      let reviewStatus = '';
+      let dueStatus = '';
+      let dueClass = '';
 
-      if (review.difficulty === 'easy') {
-        reviewStatus = 'No review needed';
-      } else if (nextReview) {
+      if (review.difficulty !== 'easy' && nextReview) {
         if (nextReview <= now) {
-          reviewStatus = 'Due for review';
+          dueStatus = 'Due now';
+          dueClass = 'overdue';
         } else {
           const days = Math.ceil((nextReview - now) / (1000 * 60 * 60 * 24));
-          reviewStatus = `Next: ${days} day${days !== 1 ? 's' : ''}`;
+          dueStatus = `${days}d`;
         }
       }
 
       return `
-        <div class="review-video-item" onclick="playReviewVideo('${escapeHtml(review.video_id)}', '${escapeHtml(review.video_title).replace(/'/g, "\\'")}', '${escapeHtml(review.channel_id || '')}', '${escapeHtml(review.channel_name || '').replace(/'/g, "\\'")}', '${escapeHtml(review.thumbnail_url || '')}')">
-          <img class="review-video-thumbnail" src="${escapeHtml(review.thumbnail_url || '')}" alt="" onerror="this.style.display='none'">
-          <div class="review-video-info">
-            <div class="review-video-title">${escapeHtml(review.video_title)}</div>
-            <div class="review-video-meta">
-              <span class="review-video-difficulty ${review.difficulty}">
-                ${difficultyIcons[review.difficulty] || ''} ${difficultyLabels[review.difficulty] || review.difficulty}
+        <div class="review-video-card" onclick="playReviewVideo('${escapeHtml(review.video_id)}', '${escapeHtml(review.video_title).replace(/'/g, "\\'")}', '${escapeHtml(review.channel_id || '')}', '${escapeHtml(review.channel_name || '').replace(/'/g, "\\'")}', '${escapeHtml(review.thumbnail_url || '')}')">
+          <div class="review-card-thumbnail">
+            <img src="${escapeHtml(review.thumbnail_url || '')}" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 9%22%3E%3Crect fill=%22%23151929%22 width=%2216%22 height=%229%22/%3E%3C/svg%3E'">
+            <span class="review-card-badge ${review.difficulty}">${difficultyLabels[review.difficulty]}</span>
+            ${dueStatus ? `<span class="review-card-due ${dueClass}">${dueStatus}</span>` : ''}
+            <div class="review-play-btn">▶</div>
+          </div>
+          <div class="review-card-body">
+            <div class="review-card-title">${escapeHtml(review.video_title)}</div>
+            <div class="review-card-meta">
+              <span class="review-card-channel">${escapeHtml(review.channel_name || 'Unknown')}</span>
+              <span class="review-card-stats">
+                <span class="review-card-stat">👁 ${review.total_watch_count || 1}</span>
               </span>
-              <span>${escapeHtml(review.channel_name || '')}</span>
-              ${reviewStatus ? `<span>${reviewStatus}</span>` : ''}
             </div>
           </div>
-          <div class="review-video-play">▶</div>
         </div>
       `;
     }
@@ -3574,12 +4012,12 @@
     function filterReviews(filter) {
       currentReviewFilter = filter;
 
-      // Update active state
-      document.querySelectorAll('.review-stat-card').forEach(card => {
-        card.classList.toggle('active', card.dataset.filter === filter);
+      // Update active state on filter pills
+      document.querySelectorAll('.filter-pill').forEach(pill => {
+        pill.classList.toggle('active', pill.dataset.filter === filter);
       });
 
-      loadReviewList(filter);
+      loadReviewVideoGrid(filter);
     }
 
     function playReviewVideo(videoId, title, channelId, channelName, thumbnail) {
