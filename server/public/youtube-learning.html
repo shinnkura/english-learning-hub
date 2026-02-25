@@ -1740,6 +1740,487 @@
         display: block;
       }
     }
+
+    /* Bottom Navigation for Mobile */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-subtle);
+      z-index: 1000;
+      padding: 8px 0;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    }
+
+    .bottom-nav-items {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .bottom-nav-item:active {
+      transform: scale(0.95);
+    }
+
+    .bottom-nav-item.active {
+      color: var(--accent-gold);
+    }
+
+    .bottom-nav-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .bottom-nav-label {
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      .bottom-nav {
+        display: block;
+      }
+
+      /* Hide hamburger menu on mobile */
+      .mobile-menu-btn {
+        display: none !important;
+      }
+
+      /* Hide sidebar on mobile */
+      .sidebar {
+        display: none !important;
+      }
+
+      .sidebar-overlay {
+        display: none !important;
+      }
+
+      /* Add padding to content for bottom nav */
+      .content {
+        padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+      }
+    }
+
+    /* Difficulty Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      width: 90%;
+      max-width: 440px;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-overlay.open .modal-content {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .modal-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--accent-gold-soft);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 16px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .modal-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .difficulty-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .difficulty-option {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .difficulty-option:hover {
+      border-color: var(--border-accent);
+      background: var(--bg-glass);
+    }
+
+    .difficulty-option.selected {
+      border-color: var(--accent-gold);
+      background: var(--accent-gold-soft);
+    }
+
+    .difficulty-option-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .difficulty-option[data-difficulty="easy"] .difficulty-option-icon {
+      background: var(--success-soft);
+    }
+
+    .difficulty-option[data-difficulty="normal"] .difficulty-option-icon {
+      background: var(--accent-gold-soft);
+    }
+
+    .difficulty-option[data-difficulty="difficult"] .difficulty-option-icon {
+      background: var(--error-soft);
+    }
+
+    .difficulty-option-info {
+      flex: 1;
+    }
+
+    .difficulty-option-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .difficulty-option-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .difficulty-option-check {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border-subtle);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .difficulty-option.selected .difficulty-option-check {
+      background: var(--accent-gold);
+      border-color: var(--accent-gold);
+      color: #0c0f1a;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
+
+    /* Review Cards - Minimal */
+    .review-stats-grid {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .review-stat-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .review-stat-card:hover {
+      background: var(--bg-glass);
+    }
+
+    .review-stat-card.active {
+      border-color: var(--text-muted);
+      background: var(--bg-glass);
+    }
+
+    .review-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .review-stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Recommended Reviews Section */
+    .recommended-section {
+      margin-bottom: 32px;
+    }
+
+    .recommended-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .recommended-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--error-soft);
+      color: var(--error);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .review-video-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .review-video-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .review-video-item:hover {
+      border-color: var(--accent-gold);
+      transform: translateX(4px);
+    }
+
+    .review-video-thumbnail {
+      width: 120px;
+      height: 68px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .review-video-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .review-video-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .review-video-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .review-video-difficulty {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .review-video-difficulty.easy {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .review-video-difficulty.normal {
+      background: var(--accent-gold-soft);
+      color: var(--accent-gold);
+    }
+
+    .review-video-difficulty.difficult {
+      background: var(--error-soft);
+      color: var(--error);
+    }
+
+    .review-video-play {
+      width: 44px;
+      height: 44px;
+      background: var(--accent-gold-soft);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-gold);
+      font-size: 16px;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .review-video-item:hover .review-video-play {
+      background: var(--accent-gold);
+      color: #0c0f1a;
+    }
+
+    @media (max-width: 768px) {
+      .review-stats-grid {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .review-stat-card {
+        padding: 8px 12px;
+      }
+
+      .review-stat-value {
+        font-size: 14px;
+      }
+
+      .review-stat-label {
+        font-size: 11px;
+      }
+
+      .review-video-item {
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .review-video-thumbnail {
+        width: 80px;
+        height: 45px;
+      }
+
+      .review-video-title {
+        font-size: 13px;
+      }
+
+      .review-video-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .review-video-play {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+      }
+
+      .modal-content {
+        padding: 24px;
+        margin: 16px;
+      }
+
+      .modal-icon {
+        width: 52px;
+        height: 52px;
+        font-size: 24px;
+      }
+
+      .modal-title {
+        font-size: 18px;
+      }
+
+      .difficulty-option {
+        padding: 14px 16px;
+        gap: 12px;
+      }
+
+      .difficulty-option-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+      }
+
+      .difficulty-option-label {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1766,6 +2247,10 @@
         <button class="nav-item active" data-tab="learn">
           <span class="nav-icon">▶️</span>
           Learn
+        </button>
+        <button class="nav-item" data-tab="review">
+          <span class="nav-icon">🔁</span>
+          Review
         </button>
         <button class="nav-item" data-tab="history">
           <span class="nav-icon">📊</span>
@@ -1913,6 +2398,56 @@
         </div>
       </div>
 
+      <!-- Review Tab -->
+      <div class="tab-content" id="review-tab">
+        <!-- Stats Cards -->
+        <div class="review-stats-grid">
+          <div class="review-stat-card active" data-filter="all" onclick="filterReviews('all')">
+            <div class="review-stat-label">All</div>
+            <div class="review-stat-value" id="review-total">0</div>
+          </div>
+          <div class="review-stat-card" data-filter="easy" onclick="filterReviews('easy')">
+            <div class="review-stat-label">Easy</div>
+            <div class="review-stat-value" id="review-easy">0</div>
+          </div>
+          <div class="review-stat-card" data-filter="normal" onclick="filterReviews('normal')">
+            <div class="review-stat-label">Normal</div>
+            <div class="review-stat-value" id="review-normal">0</div>
+          </div>
+          <div class="review-stat-card" data-filter="difficult" onclick="filterReviews('difficult')">
+            <div class="review-stat-label">Difficult</div>
+            <div class="review-stat-value" id="review-difficult">0</div>
+          </div>
+        </div>
+
+        <!-- Recommended Reviews -->
+        <div class="recommended-section" id="recommended-section" style="display: none;">
+          <div class="recommended-header">
+            <h2 class="section-title">Today's Recommended Reviews</h2>
+            <span class="recommended-badge" id="due-badge">
+              <span>🔔</span>
+              <span id="due-count">0</span> due
+            </span>
+          </div>
+          <div class="review-video-list" id="recommended-list"></div>
+        </div>
+
+        <!-- All Reviews -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-title-icon">📺</div>
+              <span id="review-list-title">All Videos</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="review-video-list" id="review-list">
+              <div class="loading">Loading reviews</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- History Tab -->
       <div class="tab-content" id="history-tab">
         <div class="history-grid">
@@ -1969,6 +2504,50 @@
           </div>
         </div>
       </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Difficulty Selection Modal -->
+  <div class="modal-overlay" id="difficulty-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon">🎯</div>
+        <h2 class="modal-title">How was this video?</h2>
+        <p class="modal-subtitle">Rate the difficulty to help plan your review schedule</p>
+      </div>
+      <div class="difficulty-options">
+        <div class="difficulty-option" data-difficulty="easy" onclick="selectDifficulty('easy')">
+          <div class="difficulty-option-icon">😊</div>
+          <div class="difficulty-option-info">
+            <div class="difficulty-option-label">Easy</div>
+            <div class="difficulty-option-desc">Understood well, no review needed</div>
+          </div>
+          <div class="difficulty-option-check">✓</div>
+        </div>
+        <div class="difficulty-option" data-difficulty="normal" onclick="selectDifficulty('normal')">
+          <div class="difficulty-option-icon">📝</div>
+          <div class="difficulty-option-info">
+            <div class="difficulty-option-label">Normal</div>
+            <div class="difficulty-option-desc">Review with spaced repetition (1→3→7→14→30 days)</div>
+          </div>
+          <div class="difficulty-option-check">✓</div>
+        </div>
+        <div class="difficulty-option" data-difficulty="difficult" onclick="selectDifficulty('difficult')">
+          <div class="difficulty-option-icon">🔥</div>
+          <div class="difficulty-option-info">
+            <div class="difficulty-option-label">Difficult</div>
+            <div class="difficulty-option-desc">Review again in 1-2 weeks</div>
+          </div>
+          <div class="difficulty-option-check">✓</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="skipDifficulty()">Skip</button>
+        <button class="btn btn-primary" id="save-difficulty-btn" onclick="saveDifficulty()" disabled>
+          <span>✓</span>
+          Save
+        </button>
       </div>
     </div>
   </div>
@@ -2152,11 +2731,20 @@
         title: 'Learn',
         subtitle: 'Watch videos and improve your English'
       },
+      review: {
+        title: 'Review',
+        subtitle: 'Review videos with spaced repetition'
+      },
       history: {
         title: 'History',
         subtitle: 'View your learning progress'
       }
     };
+
+    // Difficulty modal state
+    let selectedDifficulty = null;
+    let pendingLearningData = null;
+    let currentReviewFilter = 'all';
 
     // Sidebar navigation
     document.querySelectorAll('.nav-item').forEach(btn => {
@@ -2188,6 +2776,7 @@
 
       if (tab === 'channels') loadChannels();
       if (tab === 'learn') loadVideos();
+      if (tab === 'review') loadReviews();
       if (tab === 'history') loadHistory();
     }
 
@@ -2555,7 +3144,6 @@
     async function finishLearning() {
       if (!currentVideo) return;
 
-      const endTime = new Date();
       const durationSeconds = getTotalLearningSeconds();
 
       if (durationSeconds < 30) {
@@ -2563,27 +3151,70 @@
         return;
       }
 
+      // Store pending data and show difficulty modal
+      pendingLearningData = {
+        video_id: currentVideo.videoId,
+        video_title: currentVideo.title,
+        channel_id: currentVideo.channelId,
+        channel_name: currentVideo.channelName,
+        thumbnail_url: currentVideo.thumbnail,
+        duration_seconds: durationSeconds,
+        video_duration_seconds: currentVideo.durationSeconds,
+        started_at: new Date(Date.now() - durationSeconds * 1000).toISOString(),
+        ended_at: new Date().toISOString(),
+      };
+
+      showDifficultyModal();
+    }
+
+    // ==========================================
+    // Difficulty Modal Functions
+    // ==========================================
+
+    function showDifficultyModal() {
+      selectedDifficulty = null;
+      document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
+      document.getElementById('save-difficulty-btn').disabled = true;
+      document.getElementById('difficulty-modal').classList.add('open');
+    }
+
+    function hideDifficultyModal() {
+      document.getElementById('difficulty-modal').classList.remove('open');
+    }
+
+    function selectDifficulty(difficulty) {
+      selectedDifficulty = difficulty;
+      document.querySelectorAll('.difficulty-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.difficulty === difficulty);
+      });
+      document.getElementById('save-difficulty-btn').disabled = false;
+    }
+
+    async function saveDifficulty() {
+      if (!pendingLearningData || !selectedDifficulty) return;
+
+      // Store values locally before clearing
+      const difficulty = selectedDifficulty;
+      const durationSeconds = pendingLearningData.duration_seconds;
+
       try {
         const response = await fetch(`${API_BASE}/api/youtube/learning-logs`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            video_id: currentVideo.videoId,
-            video_title: currentVideo.title,
-            channel_id: currentVideo.channelId,
-            channel_name: currentVideo.channelName,
-            thumbnail_url: currentVideo.thumbnail,
-            duration_seconds: durationSeconds,
-            video_duration_seconds: currentVideo.durationSeconds,
-            started_at: new Date(Date.now() - durationSeconds * 1000).toISOString(),
-            ended_at: endTime.toISOString(),
+            ...pendingLearningData,
+            difficulty: difficulty,
           }),
         });
 
         const data = await response.json();
 
         if (data.success) {
-          showToast(`Saved ${formatDuration(durationSeconds)} of learning!`);
+          const difficultyLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+          showToast(`Saved ${formatDuration(durationSeconds)} as ${difficultyLabel}!`);
+          hideDifficultyModal();
+          pendingLearningData = null;
+          selectedDifficulty = null;
           resetPlayer();
           loadTodayStats();
         } else {
@@ -2593,6 +3224,37 @@
         console.error('Error saving learning log:', error);
         showToast('Failed to save learning log', 'error');
       }
+    }
+
+    async function skipDifficulty() {
+      if (!pendingLearningData) {
+        hideDifficultyModal();
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pendingLearningData),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast(`Saved ${formatDuration(pendingLearningData.duration_seconds)} of learning!`);
+          hideDifficultyModal();
+          resetPlayer();
+          loadTodayStats();
+        } else {
+          showToast(data.error || 'Failed to save learning log', 'error');
+        }
+      } catch (error) {
+        console.error('Error saving learning log:', error);
+        showToast('Failed to save learning log', 'error');
+      }
+
+      pendingLearningData = null;
     }
 
     function resetPlayer() {
@@ -2752,6 +3414,182 @@
     }
 
     // ==========================================
+    // Review Tab Functions
+    // ==========================================
+
+    async function loadReviews() {
+      await loadReviewStats();
+      await loadRecommendedReviews();
+      await loadReviewList();
+    }
+
+    async function loadReviewStats() {
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/reviews/stats`);
+        const data = await response.json();
+
+        if (data.success) {
+          const total = data.easy + data.normal + data.difficult;
+          document.getElementById('review-total').textContent = total;
+          document.getElementById('review-easy').textContent = data.easy;
+          document.getElementById('review-normal').textContent = data.normal;
+          document.getElementById('review-difficult').textContent = data.difficult;
+          document.getElementById('due-count').textContent = data.dueForReview;
+        }
+      } catch (error) {
+        console.error('Error loading review stats:', error);
+      }
+    }
+
+    async function loadRecommendedReviews() {
+      const section = document.getElementById('recommended-section');
+      const container = document.getElementById('recommended-list');
+
+      try {
+        const response = await fetch(`${API_BASE}/api/youtube/reviews/recommended`);
+        const data = await response.json();
+
+        if (data.success && data.data && data.data.length > 0) {
+          section.style.display = 'block';
+          container.innerHTML = data.data.map(review => renderReviewItem(review)).join('');
+        } else {
+          section.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error loading recommended reviews:', error);
+        section.style.display = 'none';
+      }
+    }
+
+    async function loadReviewList(filter = currentReviewFilter) {
+      const container = document.getElementById('review-list');
+      const titleEl = document.getElementById('review-list-title');
+
+      const filterLabels = {
+        all: 'All Videos',
+        easy: 'Easy Videos',
+        normal: 'Normal Videos',
+        difficult: 'Difficult Videos'
+      };
+      titleEl.textContent = filterLabels[filter] || 'All Videos';
+
+      try {
+        const url = filter === 'all'
+          ? `${API_BASE}/api/youtube/reviews`
+          : `${API_BASE}/api/youtube/reviews?difficulty=${filter}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.success || !data.data || data.data.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+              <div style="font-size: 32px; margin-bottom: 12px;">📚</div>
+              <div>No videos found</div>
+              <div style="font-size: 13px; margin-top: 8px;">Watch some videos and rate their difficulty to see them here</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = data.data.map(review => renderReviewItem(review)).join('');
+      } catch (error) {
+        console.error('Error loading review list:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--error);">Failed to load reviews</div>';
+      }
+    }
+
+    function renderReviewItem(review) {
+      const difficultyIcons = { easy: '😊', normal: '📝', difficult: '🔥' };
+      const difficultyLabels = { easy: 'Easy', normal: 'Normal', difficult: 'Difficult' };
+
+      const nextReview = review.next_review_at ? new Date(review.next_review_at) : null;
+      const now = new Date();
+      let reviewStatus = '';
+
+      if (review.difficulty === 'easy') {
+        reviewStatus = 'No review needed';
+      } else if (nextReview) {
+        if (nextReview <= now) {
+          reviewStatus = 'Due for review';
+        } else {
+          const days = Math.ceil((nextReview - now) / (1000 * 60 * 60 * 24));
+          reviewStatus = `Next: ${days} day${days !== 1 ? 's' : ''}`;
+        }
+      }
+
+      return `
+        <div class="review-video-item" onclick="playReviewVideo('${escapeHtml(review.video_id)}', '${escapeHtml(review.video_title).replace(/'/g, "\\'")}', '${escapeHtml(review.channel_id || '')}', '${escapeHtml(review.channel_name || '').replace(/'/g, "\\'")}', '${escapeHtml(review.thumbnail_url || '')}')">
+          <img class="review-video-thumbnail" src="${escapeHtml(review.thumbnail_url || '')}" alt="" onerror="this.style.display='none'">
+          <div class="review-video-info">
+            <div class="review-video-title">${escapeHtml(review.video_title)}</div>
+            <div class="review-video-meta">
+              <span class="review-video-difficulty ${review.difficulty}">
+                ${difficultyIcons[review.difficulty] || ''} ${difficultyLabels[review.difficulty] || review.difficulty}
+              </span>
+              <span>${escapeHtml(review.channel_name || '')}</span>
+              ${reviewStatus ? `<span>${reviewStatus}</span>` : ''}
+            </div>
+          </div>
+          <div class="review-video-play">▶</div>
+        </div>
+      `;
+    }
+
+    function filterReviews(filter) {
+      currentReviewFilter = filter;
+
+      // Update active state
+      document.querySelectorAll('.review-stat-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.filter === filter);
+      });
+
+      loadReviewList(filter);
+    }
+
+    function playReviewVideo(videoId, title, channelId, channelName, thumbnail) {
+      // Create a video object to play
+      currentVideo = {
+        videoId: videoId,
+        title: title,
+        channelId: channelId,
+        channelName: channelName,
+        thumbnail: thumbnail,
+        durationSeconds: 0
+      };
+
+      // Switch to Learn tab and start playing
+      switchTab('learn');
+
+      // Hide resume banner if visible
+      if (window.resumeElapsedInterval) {
+        clearInterval(window.resumeElapsedInterval);
+        window.resumeElapsedInterval = null;
+      }
+      document.getElementById('resume-banner').style.display = 'none';
+
+      document.getElementById('video-selection').style.display = 'none';
+      document.getElementById('player-view').classList.add('active');
+      document.getElementById('player-title').textContent = currentVideo.title;
+
+      // Reset accumulated time for new video
+      accumulatedLearningSeconds = 0;
+      accumulatedSessionSeconds = 0;
+      isPaused = false;
+
+      learningStartTime = new Date();
+      startTimer();
+
+      // Save session to localStorage
+      saveSession();
+
+      loadYouTubePlayer(videoId);
+      loadCaptions(videoId);
+
+      showToast('Playing review video');
+    }
+
+    // ==========================================
     // Play History Video
     // ==========================================
 
@@ -2866,6 +3704,7 @@
     function getInitialTab() {
       const path = window.location.pathname;
       if (path === '/channels') return 'channels';
+      if (path === '/review') return 'review';
       if (path === '/history') return 'history';
       return 'learn'; // default
     }

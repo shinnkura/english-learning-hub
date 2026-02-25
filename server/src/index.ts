@@ -107,6 +107,10 @@ app.get('/history', (_req, res) => {
   res.sendFile(path.join(publicDir, 'youtube-learning.html'));
 });
 
+app.get('/review', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'youtube-learning.html'));
+});
+
 // ============================================
 // Health Check
 // ============================================
@@ -862,6 +866,30 @@ app.post('/api/youtube/videos/refresh', async (_req, res) => {
 // YouTube Learning Logs API
 // ============================================
 
+// Helper function to calculate next review date based on difficulty and repetition level
+function calculateNextReviewDate(difficulty: string, repetitionLevel: number): Date | null {
+  const now = new Date();
+
+  if (difficulty === 'easy') {
+    // Easy: no review recommended (listening list)
+    return null;
+  }
+
+  if (difficulty === 'difficult') {
+    // Difficult: review in 7-14 days (random for variety)
+    const days = 7 + Math.floor(Math.random() * 8); // 7-14 days
+    now.setDate(now.getDate() + days);
+    return now;
+  }
+
+  // Normal: Ebbinghaus forgetting curve intervals
+  // Level 0: 1 day, 1: 3 days, 2: 7 days, 3: 14 days, 4: 30 days
+  const intervals = [1, 3, 7, 14, 30];
+  const days = intervals[Math.min(repetitionLevel, intervals.length - 1)];
+  now.setDate(now.getDate() + days);
+  return now;
+}
+
 // Save a learning log
 app.post('/api/youtube/learning-logs', async (req, res) => {
   try {
@@ -876,6 +904,7 @@ app.post('/api/youtube/learning-logs', async (req, res) => {
       started_at,
       ended_at,
       notes,
+      difficulty, // New: 'easy', 'normal', 'difficult', or undefined (skip)
     } = req.body;
 
     if (!video_id || !video_title || !started_at || !ended_at || duration_seconds === undefined) {
@@ -899,6 +928,8 @@ app.post('/api/youtube/learning-logs', async (req, res) => {
     }
 
     const sql = neon(databaseUrl);
+
+    // Save learning log
     const result = await sql`
       INSERT INTO youtube_learning_logs (
         video_id, video_title, channel_id, channel_name, thumbnail_url,
@@ -917,6 +948,66 @@ app.post('/api/youtube/learning-logs', async (req, res) => {
       )
       RETURNING *
     `;
+
+    // If difficulty is provided, update or create review entry
+    if (difficulty && ['easy', 'normal', 'difficult'].includes(difficulty)) {
+      const existingReview = await sql`
+        SELECT * FROM youtube_video_reviews WHERE video_id = ${video_id}
+      `;
+
+      if (existingReview.length > 0) {
+        // Update existing review
+        const review = existingReview[0];
+        let newRepetitionLevel = review.repetition_level;
+
+        // For Normal difficulty, increment repetition level
+        if (difficulty === 'normal') {
+          newRepetitionLevel = Math.min((review.repetition_level || 0) + 1, 4);
+        } else {
+          // Reset for other difficulties
+          newRepetitionLevel = 0;
+        }
+
+        const nextReviewAt = calculateNextReviewDate(difficulty, newRepetitionLevel);
+
+        await sql`
+          UPDATE youtube_video_reviews
+          SET
+            difficulty = ${difficulty},
+            repetition_level = ${newRepetitionLevel},
+            next_review_at = ${nextReviewAt ? nextReviewAt.toISOString() : null},
+            last_watched_at = NOW(),
+            total_watch_count = total_watch_count + 1,
+            total_watch_seconds = total_watch_seconds + ${duration_seconds},
+            updated_at = NOW()
+          WHERE video_id = ${video_id}
+        `;
+      } else {
+        // Create new review entry
+        const nextReviewAt = calculateNextReviewDate(difficulty, 0);
+
+        await sql`
+          INSERT INTO youtube_video_reviews (
+            video_id, video_title, channel_id, channel_name, thumbnail_url,
+            video_duration_seconds, difficulty, repetition_level, next_review_at,
+            last_watched_at, total_watch_count, total_watch_seconds
+          ) VALUES (
+            ${video_id},
+            ${video_title},
+            ${channel_id || null},
+            ${channel_name || null},
+            ${thumbnail_url || null},
+            ${video_duration_seconds || null},
+            ${difficulty},
+            ${0},
+            ${nextReviewAt ? nextReviewAt.toISOString() : null},
+            NOW(),
+            ${1},
+            ${duration_seconds}
+          )
+        `;
+      }
+    }
 
     return res.json({ success: true, data: result[0] });
   } catch (error: any) {
@@ -1047,6 +1138,118 @@ app.get('/api/youtube/learning-logs/stats', async (req, res) => {
   } catch (error: any) {
     console.error('Error fetching learning stats:', error);
     return res.status(500).json({ error: 'Failed to fetch learning stats', success: false });
+  }
+});
+
+// ============================================
+// YouTube Video Reviews API
+// ============================================
+
+// Get all reviews with optional filter
+app.get('/api/youtube/reviews', async (req, res) => {
+  try {
+    const { difficulty, limit = '100' } = req.query;
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    const limitNum = parseInt(limit as string, 10) || 100;
+
+    let result;
+    if (difficulty && ['easy', 'normal', 'difficult'].includes(difficulty as string)) {
+      result = await sql`
+        SELECT * FROM youtube_video_reviews
+        WHERE difficulty = ${difficulty as string}
+        ORDER BY last_watched_at DESC
+        LIMIT ${limitNum}
+      `;
+    } else {
+      result = await sql`
+        SELECT * FROM youtube_video_reviews
+        ORDER BY last_watched_at DESC
+        LIMIT ${limitNum}
+      `;
+    }
+
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching reviews:', error);
+    return res.status(500).json({ error: 'Failed to fetch reviews', success: false });
+  }
+});
+
+// Get today's recommended reviews
+app.get('/api/youtube/reviews/recommended', async (req, res) => {
+  try {
+    const { limit = '20' } = req.query;
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+    const limitNum = parseInt(limit as string, 10) || 20;
+
+    // Get videos where next_review_at is today or earlier (due for review)
+    const result = await sql`
+      SELECT * FROM youtube_video_reviews
+      WHERE next_review_at IS NOT NULL
+        AND next_review_at <= NOW()
+        AND difficulty IN ('normal', 'difficult')
+      ORDER BY next_review_at ASC
+      LIMIT ${limitNum}
+    `;
+
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching recommended reviews:', error);
+    return res.status(500).json({ error: 'Failed to fetch recommended reviews', success: false });
+  }
+});
+
+// Get review statistics
+app.get('/api/youtube/reviews/stats', async (req, res) => {
+  try {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+
+    // Count by difficulty
+    const easyCount = await sql`SELECT COUNT(*) as count FROM youtube_video_reviews WHERE difficulty = 'easy'`;
+    const normalCount = await sql`SELECT COUNT(*) as count FROM youtube_video_reviews WHERE difficulty = 'normal'`;
+    const difficultCount = await sql`SELECT COUNT(*) as count FROM youtube_video_reviews WHERE difficulty = 'difficult'`;
+
+    // Count due for review (today or earlier)
+    const dueCount = await sql`
+      SELECT COUNT(*) as count FROM youtube_video_reviews
+      WHERE next_review_at IS NOT NULL
+        AND next_review_at <= NOW()
+        AND difficulty IN ('normal', 'difficult')
+    `;
+
+    // Total watch time
+    const totalWatchTime = await sql`
+      SELECT COALESCE(SUM(total_watch_seconds), 0) as total_seconds FROM youtube_video_reviews
+    `;
+
+    return res.json({
+      success: true,
+      easy: parseInt(easyCount[0].count as string, 10),
+      normal: parseInt(normalCount[0].count as string, 10),
+      difficult: parseInt(difficultCount[0].count as string, 10),
+      dueForReview: parseInt(dueCount[0].count as string, 10),
+      totalWatchSeconds: parseInt(totalWatchTime[0].total_seconds as string, 10),
+    });
+  } catch (error: any) {
+    console.error('Error fetching review stats:', error);
+    return res.status(500).json({ error: 'Failed to fetch review stats', success: false });
   }
 });
 
