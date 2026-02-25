@@ -17,7 +17,7 @@ import { neon } from '@neondatabase/serverless';
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { YoutubeTranscript } from 'youtube-transcript';
+import { YoutubeTranscript } from 'youtube-transcript-scraper';
 
 dotenv.config();
 
@@ -472,9 +472,9 @@ app.get('/api/captions/:videoId', async (req, res) => {
       }
 
       const captions = transcript.map((item: any) => ({
-        start: item.offset / 1000, // Convert ms to seconds
-        duration: item.duration / 1000,
-        end: (item.offset + item.duration) / 1000,
+        start: item.start,
+        duration: item.duration,
+        end: item.start + item.duration,
         text: item.text
           .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
@@ -485,7 +485,7 @@ app.get('/api/captions/:videoId', async (req, res) => {
           .trim(),
       }));
 
-      console.log('Successfully fetched', captions.length, 'captions using youtube-transcript');
+      console.log('Successfully fetched', captions.length, 'captions using youtube-transcript-scraper');
 
       const response = { captions, languageCode: lang as string };
       await cache.set(cacheKey, response);
