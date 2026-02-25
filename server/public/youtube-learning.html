@@ -2627,6 +2627,108 @@
         font-size: 14px;
       }
     }
+
+    /* Auth Styles */
+    .sidebar-auth {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-subtle);
+      margin-top: auto;
+    }
+
+    .auth-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--gradient-accent);
+      border: none;
+      border-radius: var(--radius-md);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .auth-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .auth-icon {
+      font-size: 16px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      background: var(--bg-glass);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .user-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 140px;
+    }
+
+    .signout-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0;
+      text-align: left;
+    }
+
+    .signout-btn:hover {
+      color: var(--accent-gold);
+    }
+
+    .auth-modal {
+      max-width: 400px;
+    }
+
+    .auth-error {
+      background: var(--error-soft);
+      color: var(--error);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .auth-toggle a {
+      color: var(--accent-gold);
+      text-decoration: none;
+    }
+
+    .auth-toggle a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -2663,6 +2765,21 @@
           History
         </button>
       </nav>
+
+      <!-- Auth Section -->
+      <div class="sidebar-auth">
+        <button class="auth-btn" id="auth-button" onclick="showAuthModal('signin')">
+          <span class="auth-icon">👤</span>
+          Sign In
+        </button>
+        <div class="user-info" id="user-info" style="display: none;">
+          <div class="user-avatar">👤</div>
+          <div class="user-details">
+            <span class="user-name" id="user-name">User</span>
+            <button class="signout-btn" onclick="signOut()">Sign Out</button>
+          </div>
+        </div>
+      </div>
     </aside>
 
     <!-- Mobile Overlay -->
@@ -3005,9 +3122,48 @@
     </div>
   </nav>
 
-  <script>
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="auth-modal" style="display: none;">
+    <div class="modal auth-modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="auth-modal-title">Sign In</h2>
+        <button class="modal-close" onclick="hideAuthModal()">&times;</button>
+      </div>
+      <form onsubmit="handleAuthSubmit(event)">
+        <input type="hidden" id="auth-mode" value="signin">
+        <div class="auth-error" id="auth-error" style="display: none;"></div>
+        <div class="form-group" id="auth-name-group" style="display: none;">
+          <label for="auth-name">Name</label>
+          <input type="text" id="auth-name" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label for="auth-email">Email</label>
+          <input type="email" id="auth-email" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" placeholder="••••••••" required minlength="8">
+        </div>
+        <button type="submit" class="btn btn-primary" id="auth-submit-btn" style="width: 100%; margin-top: 16px;">Sign In</button>
+        <p class="auth-toggle" id="auth-toggle-text" style="text-align: center; margin-top: 16px; color: var(--text-secondary);">
+          Don't have an account? <a href="#" onclick="showAuthModal('signup'); return false;">Sign up</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    // Neon Auth configuration
+    const NEON_AUTH_URL = 'https://ep-tiny-violet-aewayuqh.neonauth.c-2.us-east-2.aws.neon.tech/neondb/auth';
+
+    // Auth state
+    let authSession = null;
+    let authUser = null;
+    let authToken = null;
+
     const API_BASE = '';
     const STORAGE_KEY = 'ytlearning_session';
+    const AUTH_TOKEN_KEY = 'ytlearning_auth_token';
     let currentTab = 'learn';
     let videos = [];
     let currentVideo = null;
@@ -3025,6 +3181,199 @@
     let accumulatedLearningSeconds = 0;
     let accumulatedSessionSeconds = 0;
     let isPaused = false;
+
+    // ==========================================
+    // Neon Auth Functions
+    // ==========================================
+
+    async function initAuth() {
+      try {
+        // Load saved token from localStorage
+        const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+        if (savedToken) {
+          authToken = savedToken;
+          // Verify token is still valid
+          const response = await fetch(`${API_BASE}/api/auth/me`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            authUser = data.user;
+            updateAuthUI();
+            return;
+          } else {
+            // Token invalid, clear it
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            authToken = null;
+          }
+        }
+        updateAuthUI();
+      } catch (error) {
+        console.error('Auth init error:', error);
+        updateAuthUI();
+      }
+    }
+
+    async function signUp(email, password, name) {
+      try {
+        const response = await fetch(`${NEON_AUTH_URL}/sign-up/email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name: name || email.split('@')[0] }),
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error.message || 'Sign up failed');
+        }
+
+        // Get session after sign up
+        await refreshSession();
+        return { success: true };
+      } catch (error) {
+        console.error('Sign up error:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    async function signIn(email, password) {
+      try {
+        const response = await fetch(`${NEON_AUTH_URL}/sign-in/email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error.message || 'Sign in failed');
+        }
+
+        // Get session after sign in
+        await refreshSession();
+        return { success: true };
+      } catch (error) {
+        console.error('Sign in error:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    async function refreshSession() {
+      try {
+        const response = await fetch(`${NEON_AUTH_URL}/get-session`, {
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+        if (data.session && data.user) {
+          authSession = data.session;
+          authUser = data.user;
+          authToken = data.session.token;
+          localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+          updateAuthUI();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Session refresh error:', error);
+        return false;
+      }
+    }
+
+    async function signOut() {
+      try {
+        await fetch(`${NEON_AUTH_URL}/sign-out`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (error) {
+        console.error('Sign out error:', error);
+      }
+
+      authSession = null;
+      authUser = null;
+      authToken = null;
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      updateAuthUI();
+      showToast('Signed out');
+    }
+
+    function updateAuthUI() {
+      const authButton = document.getElementById('auth-button');
+      const userInfo = document.getElementById('user-info');
+      const userName = document.getElementById('user-name');
+
+      if (authUser) {
+        authButton.style.display = 'none';
+        userInfo.style.display = 'flex';
+        userName.textContent = authUser.email || authUser.name || 'User';
+      } else {
+        authButton.style.display = 'flex';
+        userInfo.style.display = 'none';
+      }
+    }
+
+    function getAuthHeaders() {
+      if (authToken) {
+        return { 'Authorization': `Bearer ${authToken}` };
+      }
+      return {};
+    }
+
+    function showAuthModal(mode = 'signin') {
+      const modal = document.getElementById('auth-modal');
+      modal.style.display = 'flex';
+      document.getElementById('auth-mode').value = mode;
+      document.getElementById('auth-modal-title').textContent = mode === 'signin' ? 'Sign In' : 'Sign Up';
+      document.getElementById('auth-submit-btn').textContent = mode === 'signin' ? 'Sign In' : 'Sign Up';
+      document.getElementById('auth-toggle-text').innerHTML = mode === 'signin'
+        ? "Don't have an account? <a href=\"#\" onclick=\"showAuthModal('signup'); return false;\">Sign up</a>"
+        : "Already have an account? <a href=\"#\" onclick=\"showAuthModal('signin'); return false;\">Sign in</a>";
+      document.getElementById('auth-name-group').style.display = mode === 'signup' ? 'block' : 'none';
+      document.getElementById('auth-error').style.display = 'none';
+    }
+
+    function hideAuthModal() {
+      document.getElementById('auth-modal').style.display = 'none';
+      document.getElementById('auth-email').value = '';
+      document.getElementById('auth-password').value = '';
+      document.getElementById('auth-name').value = '';
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const mode = document.getElementById('auth-mode').value;
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const name = document.getElementById('auth-name').value;
+
+      const submitBtn = document.getElementById('auth-submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Loading...';
+
+      let result;
+      if (mode === 'signup') {
+        result = await signUp(email, password, name);
+      } else {
+        result = await signIn(email, password);
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = mode === 'signin' ? 'Sign In' : 'Sign Up';
+
+      if (result.success) {
+        hideAuthModal();
+        showToast(mode === 'signin' ? 'Signed in!' : 'Account created!');
+        // Reload videos to get user-specific data
+        loadVideos();
+      } else {
+        const errorEl = document.getElementById('auth-error');
+        errorEl.textContent = result.error || 'Authentication failed';
+        errorEl.style.display = 'block';
+      }
+    }
 
     // ==========================================
     // Session Persistence (localStorage)
@@ -3155,7 +3504,7 @@
 
           fetch(`${API_BASE}/api/youtube/learning-logs`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify(data)
           }).then(() => {
             showToast(`Auto-saved ${formatDuration(elapsed)} of learning`);
@@ -3359,7 +3708,9 @@
       const grid = document.getElementById('video-grid');
 
       try {
-        const response = await fetch(`${API_BASE}/api/youtube/videos?limit=10`);
+        const response = await fetch(`${API_BASE}/api/youtube/videos?limit=10`, {
+          headers: getAuthHeaders()
+        });
         const data = await response.json();
 
         if (!data.data || data.data.length === 0) {
@@ -3416,7 +3767,9 @@
         const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
         const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
 
-        const response = await fetch(`${API_BASE}/api/youtube/learning-logs/stats?start_date=${startDate}&end_date=${endDate}`);
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs/stats?start_date=${startDate}&end_date=${endDate}`, {
+          headers: getAuthHeaders()
+        });
         const data = await response.json();
 
         document.getElementById('today-time').textContent = data.totalMinutes || 0;
@@ -3666,7 +4019,7 @@
       try {
         const response = await fetch(`${API_BASE}/api/youtube/learning-logs`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({
             ...pendingLearningData,
             difficulty: difficulty,
@@ -3701,7 +4054,7 @@
       try {
         const response = await fetch(`${API_BASE}/api/youtube/learning-logs`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify(pendingLearningData),
         });
 
@@ -3752,7 +4105,9 @@
 
     async function loadHistory() {
       try {
-        const response = await fetch(`${API_BASE}/api/youtube/learning-logs/stats`);
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs/stats`, {
+          headers: getAuthHeaders()
+        });
         const data = await response.json();
 
         document.getElementById('total-hours').textContent = data.totalHours || 0;
@@ -3853,7 +4208,9 @@
         const startDate = new Date(dateStr + 'T00:00:00+09:00').toISOString();
         const endDate = new Date(dateStr + 'T23:59:59+09:00').toISOString();
 
-        const response = await fetch(`${API_BASE}/api/youtube/learning-logs?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`);
+        const response = await fetch(`${API_BASE}/api/youtube/learning-logs?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`, {
+          headers: getAuthHeaders()
+        });
         const data = await response.json();
 
         if (!data.data || data.data.length === 0) {
@@ -4182,14 +4539,22 @@
       return 'learn'; // default
     }
 
+    // Make auth functions available globally for onclick handlers
+    window.showAuthModal = showAuthModal;
+    window.hideAuthModal = hideAuthModal;
+    window.handleAuthSubmit = handleAuthSubmit;
+    window.signOut = signOut;
+
     // Initialize
-    const initialTab = getInitialTab();
-    if (initialTab !== 'learn') {
-      switchTab(initialTab);
-    } else {
-      loadVideos();
-    }
-    checkForResumableSession();
+    initAuth().then(() => {
+      const initialTab = getInitialTab();
+      if (initialTab !== 'learn') {
+        switchTab(initialTab);
+      } else {
+        loadVideos();
+      }
+      checkForResumableSession();
+    });
   </script>
 </body>
 </html>

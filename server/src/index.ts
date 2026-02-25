@@ -18,8 +18,88 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { YoutubeTranscript } from 'youtube-transcript-scraper';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 dotenv.config();
+
+// ============================================
+// Neon Auth JWT Verification Setup
+// ============================================
+
+const NEON_AUTH_JWKS_URL = process.env.NEON_AUTH_JWKS_URL ||
+  'https://ep-tiny-violet-aewayuqh.neonauth.c-2.us-east-2.aws.neon.tech/neondb/auth/.well-known/jwks.json';
+
+let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+function getJWKS() {
+  if (!jwks) {
+    jwks = createRemoteJWKSet(new URL(NEON_AUTH_JWKS_URL));
+  }
+  return jwks;
+}
+
+// Extended Request type with user info
+interface AuthenticatedRequest extends express.Request {
+  user?: {
+    id: string;
+    email?: string;
+  };
+}
+
+// JWT Authentication Middleware
+async function authenticateJWT(
+  req: AuthenticatedRequest,
+  res: express.Response,
+  next: express.NextFunction
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Authorization header required', success: false });
+    return;
+  }
+
+  const token = authHeader.substring(7);
+
+  try {
+    const { payload } = await jwtVerify(token, getJWKS());
+
+    // Extract user info from JWT payload
+    req.user = {
+      id: payload.sub as string,
+      email: payload.email as string | undefined,
+    };
+
+    next();
+  } catch (error: any) {
+    console.error('JWT verification failed:', error.message);
+    res.status(401).json({ error: 'Invalid or expired token', success: false });
+  }
+}
+
+// Optional authentication - sets user if token present, continues otherwise
+async function optionalAuth(
+  req: AuthenticatedRequest,
+  res: express.Response,
+  next: express.NextFunction
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const { payload } = await jwtVerify(token, getJWKS());
+      req.user = {
+        id: payload.sub as string,
+        email: payload.email as string | undefined,
+      };
+    } catch (error) {
+      // Token invalid, but continue without user
+    }
+  }
+
+  next();
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -117,6 +197,18 @@ app.get('/review', (_req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ============================================
+// Auth API
+// ============================================
+
+// Get current user info (requires authentication)
+app.get('/api/auth/me', authenticateJWT, (req: AuthenticatedRequest, res) => {
+  res.json({
+    success: true,
+    user: req.user,
+  });
 });
 
 // ============================================
@@ -744,12 +836,95 @@ app.delete('/api/youtube/channels/:id', async (req, res) => {
   }
 });
 
-// Get random videos from registered channels
-app.get('/api/youtube/videos', async (req, res) => {
+// Helper function to fetch and save videos from YouTube API for a channel
+async function fetchAndSaveVideosFromYouTube(
+  sql: ReturnType<typeof neon>,
+  channelId: string,
+  channelName: string,
+  apiKey: string
+): Promise<any[]> {
+  const videos: any[] = [];
+
   try {
-    const { limit = '10', exclude_watched = 'true' } = req.query;
+    // Fetch latest videos from YouTube API
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=20&key=${apiKey}`;
+    const searchResponse = await fetch(searchUrl);
+    const searchData = await searchResponse.json() as any;
+
+    if (!searchData.items || searchData.items.length === 0) {
+      return videos;
+    }
+
+    const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',');
+
+    // Get video details including duration
+    const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoIds}&key=${apiKey}`;
+    const detailsResponse = await fetch(detailsUrl);
+    const detailsData = await detailsResponse.json() as any;
+
+    if (!detailsData.items) {
+      return videos;
+    }
+
+    for (const video of detailsData.items) {
+      // Parse ISO 8601 duration
+      const durationMatch = video.contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      const hours = parseInt(durationMatch?.[1] || '0', 10);
+      const minutes = parseInt(durationMatch?.[2] || '0', 10);
+      const seconds = parseInt(durationMatch?.[3] || '0', 10);
+      const durationSeconds = hours * 3600 + minutes * 60 + seconds;
+      const durationFormatted = `${hours > 0 ? hours + ':' : ''}${minutes.toString().padStart(hours > 0 ? 2 : 1, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      // Save to database (upsert)
+      try {
+        await sql`
+          INSERT INTO youtube_videos (
+            video_id, title, thumbnail_url, channel_id, channel_name,
+            published_at, duration_seconds, duration_formatted
+          ) VALUES (
+            ${video.id},
+            ${video.snippet.title},
+            ${video.snippet.thumbnails?.medium?.url || video.snippet.thumbnails?.default?.url || null},
+            ${channelId},
+            ${channelName},
+            ${video.snippet.publishedAt},
+            ${durationSeconds},
+            ${durationFormatted}
+          )
+          ON CONFLICT (video_id) DO UPDATE SET
+            title = EXCLUDED.title,
+            thumbnail_url = EXCLUDED.thumbnail_url,
+            updated_at = NOW()
+        `;
+      } catch (dbError) {
+        console.error(`Error saving video ${video.id} to database:`, dbError);
+      }
+
+      videos.push({
+        videoId: video.id,
+        title: video.snippet.title,
+        thumbnail: video.snippet.thumbnails?.medium?.url || video.snippet.thumbnails?.default?.url,
+        channelId: channelId,
+        channelName: channelName,
+        publishedAt: video.snippet.publishedAt,
+        durationSeconds,
+        duration: durationFormatted,
+      });
+    }
+  } catch (error) {
+    console.error(`Error fetching videos from YouTube for channel ${channelId}:`, error);
+  }
+
+  return videos;
+}
+
+// Get random videos from registered channels (with DB caching)
+app.get('/api/youtube/videos', optionalAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { limit = '10', exclude_watched = 'true', channel_id } = req.query;
     const limitNum = Math.min(parseInt(limit as string, 10) || 10, 50);
     const shouldExcludeWatched = exclude_watched !== 'false';
+    const userId = req.user?.id;
 
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
@@ -763,77 +938,82 @@ app.get('/api/youtube/videos', async (req, res) => {
 
     const sql = neon(databaseUrl);
 
-    // Get watched video IDs to exclude
-    let watchedVideoIds: Set<string> = new Set();
-    if (shouldExcludeWatched) {
-      const watchedVideos = await sql`SELECT DISTINCT video_id FROM youtube_learning_logs`;
-      watchedVideoIds = new Set(watchedVideos.map((v: any) => v.video_id));
+    // Get registered channels (or specific channel if provided)
+    let channels;
+    if (channel_id) {
+      channels = await sql`SELECT channel_id, channel_name FROM youtube_channels WHERE channel_id = ${channel_id as string}`;
+    } else {
+      channels = await sql`SELECT channel_id, channel_name FROM youtube_channels`;
     }
-
-    const channels = await sql`SELECT channel_id, channel_name FROM youtube_channels`;
 
     if (channels.length === 0) {
       return res.json({ success: true, data: [], message: 'No channels registered' });
     }
 
-    // Check cache for videos
-    const cacheKey = 'youtube:videos:all';
-    let cachedVideos = await cache.get(cacheKey) as any[] | undefined;
+    let allVideos: any[] = [];
+    let fetchedFromApi = false;
 
-    if (!cachedVideos) {
-      // Fetch videos from all channels
-      const allVideos: any[] = [];
+    // For each channel, check DB first, then fetch from YouTube if needed
+    for (const channel of channels) {
+      // Check if we have videos for this channel in DB
+      const dbVideos = await sql`
+        SELECT video_id, title, thumbnail_url, channel_id, channel_name,
+               published_at, duration_seconds, duration_formatted
+        FROM youtube_videos
+        WHERE channel_id = ${channel.channel_id}
+        ORDER BY published_at DESC
+        LIMIT 50
+      `;
 
-      for (const channel of channels) {
-        try {
-          const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channel.channel_id}&type=video&order=date&maxResults=20&key=${apiKey}`;
-          const searchResponse = await fetch(searchUrl);
-          const searchData = await searchResponse.json() as any;
-
-          if (searchData.items) {
-            const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',');
-
-            // Get video details including duration
-            const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoIds}&key=${apiKey}`;
-            const detailsResponse = await fetch(detailsUrl);
-            const detailsData = await detailsResponse.json() as any;
-
-            if (detailsData.items) {
-              for (const video of detailsData.items) {
-                // Parse ISO 8601 duration
-                const durationMatch = video.contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-                const hours = parseInt(durationMatch?.[1] || '0', 10);
-                const minutes = parseInt(durationMatch?.[2] || '0', 10);
-                const seconds = parseInt(durationMatch?.[3] || '0', 10);
-                const durationSeconds = hours * 3600 + minutes * 60 + seconds;
-
-                allVideos.push({
-                  videoId: video.id,
-                  title: video.snippet.title,
-                  thumbnail: video.snippet.thumbnails?.medium?.url || video.snippet.thumbnails?.default?.url,
-                  channelId: channel.channel_id,
-                  channelName: channel.channel_name,
-                  publishedAt: video.snippet.publishedAt,
-                  durationSeconds,
-                  duration: `${hours > 0 ? hours + ':' : ''}${minutes.toString().padStart(hours > 0 ? 2 : 1, '0')}:${seconds.toString().padStart(2, '0')}`,
-                });
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`Error fetching videos for channel ${channel.channel_id}:`, error);
+      if (dbVideos.length > 0) {
+        // Use videos from DB
+        for (const video of dbVideos) {
+          allVideos.push({
+            videoId: video.video_id,
+            title: video.title,
+            thumbnail: video.thumbnail_url,
+            channelId: video.channel_id,
+            channelName: video.channel_name,
+            publishedAt: video.published_at,
+            durationSeconds: video.duration_seconds,
+            duration: video.duration_formatted,
+          });
         }
+      } else {
+        // No videos in DB, fetch from YouTube API and save
+        console.log(`Fetching videos from YouTube for channel ${channel.channel_id}...`);
+        const videos = await fetchAndSaveVideosFromYouTube(
+          sql,
+          channel.channel_id,
+          channel.channel_name,
+          apiKey
+        );
+        allVideos = allVideos.concat(videos);
+        fetchedFromApi = true;
       }
+    }
 
-      cachedVideos = allVideos;
-      // Cache for 1 hour to reduce API quota usage
-      await cache.set(cacheKey, allVideos, 60 * 60 * 1000);
+    // Get watched video IDs to exclude
+    let watchedVideoIds: Set<string> = new Set();
+    if (shouldExcludeWatched) {
+      if (userId) {
+        // User is authenticated: use user_video_status table
+        const watchedVideos = await sql`
+          SELECT video_id FROM user_video_status
+          WHERE user_id = ${userId} AND status = 'watched'
+        `;
+        watchedVideoIds = new Set(watchedVideos.map((v: any) => v.video_id));
+      } else {
+        // Fallback: use youtube_learning_logs (legacy behavior)
+        const watchedVideos = await sql`SELECT DISTINCT video_id FROM youtube_learning_logs`;
+        watchedVideoIds = new Set(watchedVideos.map((v: any) => v.video_id));
+      }
     }
 
     // Filter out watched videos if requested
-    let availableVideos = cachedVideos;
+    let availableVideos = allVideos;
     if (shouldExcludeWatched && watchedVideoIds.size > 0) {
-      availableVideos = cachedVideos.filter((video: any) => !watchedVideoIds.has(video.videoId));
+      availableVideos = allVideos.filter((video: any) => !watchedVideoIds.has(video.videoId));
     }
 
     // Shuffle and return random videos
@@ -843,7 +1023,10 @@ app.get('/api/youtube/videos', async (req, res) => {
     return res.json({
       success: true,
       data: selectedVideos,
-      excludedCount: cachedVideos.length - availableVideos.length,
+      totalCount: allVideos.length,
+      excludedCount: allVideos.length - availableVideos.length,
+      fetchedFromApi,
+      authenticated: !!userId,
     });
   } catch (error: any) {
     console.error('Error fetching videos:', error);
@@ -851,14 +1034,59 @@ app.get('/api/youtube/videos', async (req, res) => {
   }
 });
 
-// Clear video cache (useful when new channels are added)
-app.post('/api/youtube/videos/refresh', async (_req, res) => {
+// Refresh videos from YouTube API (fetch new videos and save to DB)
+app.post('/api/youtube/videos/refresh', async (req, res) => {
   try {
+    const { channel_id } = req.body;
+
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'YouTube API key not configured', success: false });
+    }
+
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({ error: 'Database not configured', success: false });
+    }
+
+    const sql = neon(databaseUrl);
+
+    // Get channels to refresh
+    let channels;
+    if (channel_id) {
+      channels = await sql`SELECT channel_id, channel_name FROM youtube_channels WHERE channel_id = ${channel_id as string}`;
+    } else {
+      channels = await sql`SELECT channel_id, channel_name FROM youtube_channels`;
+    }
+
+    if (channels.length === 0) {
+      return res.json({ success: true, message: 'No channels to refresh', newVideosCount: 0 });
+    }
+
+    let totalNewVideos = 0;
+
+    for (const channel of channels) {
+      console.log(`Refreshing videos for channel ${channel.channel_id}...`);
+      const videos = await fetchAndSaveVideosFromYouTube(
+        sql,
+        channel.channel_id,
+        channel.channel_name,
+        apiKey
+      );
+      totalNewVideos += videos.length;
+    }
+
+    // Clear memory cache
     await cache.delete('youtube:videos:all');
-    return res.json({ success: true, message: 'Video cache cleared' });
+
+    return res.json({
+      success: true,
+      message: `Refreshed ${channels.length} channel(s)`,
+      newVideosCount: totalNewVideos,
+    });
   } catch (error: any) {
-    console.error('Error clearing cache:', error);
-    return res.status(500).json({ error: 'Failed to clear cache', success: false });
+    console.error('Error refreshing videos:', error);
+    return res.status(500).json({ error: 'Failed to refresh videos', success: false });
   }
 });
 
@@ -891,7 +1119,7 @@ function calculateNextReviewDate(difficulty: string, repetitionLevel: number): D
 }
 
 // Save a learning log
-app.post('/api/youtube/learning-logs', async (req, res) => {
+app.post('/api/youtube/learning-logs', optionalAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const {
       video_id,
@@ -906,6 +1134,8 @@ app.post('/api/youtube/learning-logs', async (req, res) => {
       notes,
       difficulty, // New: 'easy', 'normal', 'difficult', or undefined (skip)
     } = req.body;
+
+    const userId = req.user?.id || null;
 
     if (!video_id || !video_title || !started_at || !ended_at || duration_seconds === undefined) {
       return res.status(400).json({
@@ -929,11 +1159,11 @@ app.post('/api/youtube/learning-logs', async (req, res) => {
 
     const sql = neon(databaseUrl);
 
-    // Save learning log
+    // Save learning log (with user_id if authenticated)
     const result = await sql`
       INSERT INTO youtube_learning_logs (
         video_id, video_title, channel_id, channel_name, thumbnail_url,
-        duration_seconds, video_duration_seconds, started_at, ended_at, notes
+        duration_seconds, video_duration_seconds, started_at, ended_at, notes, user_id
       ) VALUES (
         ${video_id},
         ${video_title},
@@ -944,10 +1174,23 @@ app.post('/api/youtube/learning-logs', async (req, res) => {
         ${video_duration_seconds || null},
         ${started_at},
         ${ended_at},
-        ${notes || null}
+        ${notes || null},
+        ${userId}
       )
       RETURNING *
     `;
+
+    // Update user_video_status to mark as watched (if user is authenticated)
+    if (userId) {
+      await sql`
+        INSERT INTO user_video_status (user_id, video_id, status, watched_at)
+        VALUES (${userId}, ${video_id}, 'watched', NOW())
+        ON CONFLICT (user_id, video_id) DO UPDATE SET
+          status = 'watched',
+          watched_at = NOW(),
+          updated_at = NOW()
+      `;
+    }
 
     // If difficulty is provided, update or create review entry
     if (difficulty && ['easy', 'normal', 'difficult'].includes(difficulty)) {
