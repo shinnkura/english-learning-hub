@@ -2552,6 +2552,28 @@
     </div>
   </div>
 
+  <!-- Bottom Navigation for Mobile -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <div class="bottom-nav-items">
+      <button class="bottom-nav-item" data-tab="channels">
+        <span class="bottom-nav-icon">📋</span>
+        <span class="bottom-nav-label">Channels</span>
+      </button>
+      <button class="bottom-nav-item active" data-tab="learn">
+        <span class="bottom-nav-icon">▶️</span>
+        <span class="bottom-nav-label">Learn</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="review">
+        <span class="bottom-nav-icon">🔁</span>
+        <span class="bottom-nav-label">Review</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="history">
+        <span class="bottom-nav-icon">📊</span>
+        <span class="bottom-nav-label">History</span>
+      </button>
+    </div>
+  </nav>
+
   <script>
     const API_BASE = '';
     const STORAGE_KEY = 'ytlearning_session';
@@ -2754,10 +2776,23 @@
       });
     });
 
+    // Bottom navigation (mobile)
+    document.querySelectorAll('.bottom-nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        switchTab(tab);
+      });
+    });
+
     function switchTab(tab, updateUrl = true) {
       currentTab = tab;
+      // Update sidebar nav
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-      document.querySelector(`.nav-item[data-tab="${tab}"]`).classList.add('active');
+      document.querySelector(`.nav-item[data-tab="${tab}"]`)?.classList.add('active');
+      // Update bottom nav
+      document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.bottom-nav-item[data-tab="${tab}"]`)?.classList.add('active');
+      // Update tab content
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       document.getElementById(`${tab}-tab`).classList.add('active');
 
