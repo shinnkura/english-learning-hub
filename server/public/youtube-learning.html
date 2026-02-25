@@ -3123,7 +3123,7 @@
   </nav>
 
   <!-- Auth Modal -->
-  <div class="modal-overlay" id="auth-modal" style="display: none;">
+  <div class="modal-overlay" id="auth-modal">
     <div class="modal auth-modal">
       <div class="modal-header">
         <h2 class="modal-title" id="auth-modal-title">Sign In</h2>
@@ -3153,6 +3153,8 @@
   </div>
 
   <script type="module">
+    console.log('Script module loading...');
+
     // Neon Auth configuration
     const NEON_AUTH_URL = 'https://ep-tiny-violet-aewayuqh.neonauth.c-2.us-east-2.aws.neon.tech/neondb/auth';
 
@@ -3324,7 +3326,7 @@
 
     function showAuthModal(mode = 'signin') {
       const modal = document.getElementById('auth-modal');
-      modal.style.display = 'flex';
+      modal.classList.add('open');
       document.getElementById('auth-mode').value = mode;
       document.getElementById('auth-modal-title').textContent = mode === 'signin' ? 'Sign In' : 'Sign Up';
       document.getElementById('auth-submit-btn').textContent = mode === 'signin' ? 'Sign In' : 'Sign Up';
@@ -3336,7 +3338,7 @@
     }
 
     function hideAuthModal() {
-      document.getElementById('auth-modal').style.display = 'none';
+      document.getElementById('auth-modal').classList.remove('open');
       document.getElementById('auth-email').value = '';
       document.getElementById('auth-password').value = '';
       document.getElementById('auth-name').value = '';
@@ -4539,11 +4541,48 @@
       return 'learn'; // default
     }
 
-    // Make auth functions available globally for onclick handlers
+    // Make functions available globally for onclick handlers (required for type="module")
+    console.log('Registering global functions...');
+    // Auth functions
     window.showAuthModal = showAuthModal;
     window.hideAuthModal = hideAuthModal;
     window.handleAuthSubmit = handleAuthSubmit;
     window.signOut = signOut;
+
+    // Navigation and UI functions
+    window.closeMobileMenu = closeMobileMenu;
+    window.toggleMobileMenu = toggleMobileMenu;
+    window.switchTab = switchTab;
+
+    // Channel functions
+    window.registerChannel = registerChannel;
+    window.deleteChannel = deleteChannel;
+    window.refreshVideos = refreshVideos;
+
+    // Video player functions
+    window.selectVideo = selectVideo;
+    window.exitPlayer = exitPlayer;
+    window.finishLearning = finishLearning;
+    window.seekToCaption = seekToCaption;
+
+    // Resume session functions
+    window.dismissResume = dismissResume;
+    window.resumeVideo = resumeVideo;
+
+    // Review functions
+    window.filterReviews = filterReviews;
+    window.playReviewVideo = playReviewVideo;
+
+    // Difficulty modal functions
+    window.selectDifficulty = selectDifficulty;
+    window.skipDifficulty = skipDifficulty;
+    window.saveDifficulty = saveDifficulty;
+
+    // History/Calendar functions
+    window.prevMonth = prevMonth;
+    window.nextMonth = nextMonth;
+    window.selectDate = selectDate;
+    window.playHistoryVideo = playHistoryVideo;
 
     // Initialize
     initAuth().then(() => {

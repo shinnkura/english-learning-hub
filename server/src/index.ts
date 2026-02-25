@@ -153,6 +153,7 @@ const limiter = rateLimit({
   skip: (req) => req.path === '/api/health' || req.method === 'OPTIONS',
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false }, // We handle trust proxy ourselves
 });
 
 app.use('/api', limiter);
