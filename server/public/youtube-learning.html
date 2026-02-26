@@ -3598,9 +3598,28 @@
     }
 
     // Handle browser back/forward navigation
-    window.addEventListener('popstate', (event) => {
+    window.addEventListener('popstate', async (event) => {
       const tab = event.state?.tab || getInitialTab();
-      switchTab(tab, false);
+      const videoId = event.state?.videoId || getVideoIdFromUrl();
+
+      if (tab === 'learn' && videoId) {
+        // If navigating to a video, ensure videos are loaded first
+        if (videos.length === 0) {
+          await loadVideos();
+        }
+        if (videos.find(v => v.videoId === videoId)) {
+          selectVideo(videoId, false);
+        } else {
+          switchTab(tab, false);
+        }
+      } else {
+        // Reset player if going back to video list from player
+        if (currentVideo && !videoId) {
+          resetPlayer(false); // false = don't update URL (popstate already changed it)
+        } else {
+          switchTab(tab, false);
+        }
+      }
     });
 
     // Toast notification
@@ -3780,7 +3799,7 @@
       }
     }
 
-    function selectVideo(videoId) {
+    function selectVideo(videoId, updateUrl = true) {
       currentVideo = videos.find(v => v.videoId === videoId);
       if (!currentVideo) return;
 
@@ -3805,6 +3824,12 @@
 
       // Save session to localStorage
       saveSession();
+
+      // Update URL with videoId for reload persistence
+      if (updateUrl) {
+        const newUrl = `/learn?v=${videoId}`;
+        window.history.pushState({ tab: 'learn', videoId }, currentVideo.title, newUrl);
+      }
 
       loadYouTubePlayer(videoId);
       loadCaptions(videoId);
@@ -4078,7 +4103,7 @@
       pendingLearningData = null;
     }
 
-    function resetPlayer() {
+    function resetPlayer(updateUrl = true) {
       stopTimer();
       clearSession(); // Clear localStorage session
       document.getElementById('player-view').classList.remove('active');
@@ -4092,6 +4117,11 @@
       accumulatedLearningSeconds = 0;
       accumulatedSessionSeconds = 0;
       isPaused = false;
+
+      // Remove videoId from URL (skip if called from popstate)
+      if (updateUrl) {
+        window.history.pushState({ tab: 'learn' }, 'Learn', '/learn');
+      }
     }
 
     window.addEventListener('beforeunload', (e) => {
@@ -4541,6 +4571,12 @@
       return 'learn'; // default
     }
 
+    // Get videoId from URL query parameter
+    function getVideoIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('v');
+    }
+
     // Make functions available globally for onclick handlers (required for type="module")
     console.log('Registering global functions...');
     // Auth functions
@@ -4585,14 +4621,26 @@
     window.playHistoryVideo = playHistoryVideo;
 
     // Initialize
-    initAuth().then(() => {
+    initAuth().then(async () => {
       const initialTab = getInitialTab();
+      const initialVideoId = getVideoIdFromUrl();
+
       if (initialTab !== 'learn') {
         switchTab(initialTab);
       } else {
-        loadVideos();
+        await loadVideos();
+        // If videoId is in URL, select that video after loading
+        if (initialVideoId && videos.length > 0) {
+          const videoExists = videos.find(v => v.videoId === initialVideoId);
+          if (videoExists) {
+            selectVideo(initialVideoId, false); // false = don't update URL (already has videoId)
+          }
+        }
       }
-      checkForResumableSession();
+      // Only check for resumable session if no video from URL
+      if (!initialVideoId) {
+        checkForResumableSession();
+      }
     });
   </script>
 </body>
