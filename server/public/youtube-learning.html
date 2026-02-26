@@ -327,6 +327,85 @@
       letter-spacing: 0.05em;
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+
+    /* Mobile Auth Button - hidden on desktop */
+    .mobile-auth-btn,
+    .mobile-user-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--gradient-accent);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mobile-user-btn {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .mobile-auth-btn:hover,
+    .mobile-user-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .mobile-user-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 8px 0;
+      min-width: 180px;
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+    }
+
+    .mobile-user-menu.open {
+      display: block;
+    }
+
+    .mobile-user-email {
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mobile-user-menu-item {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      text-align: left;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .mobile-user-menu-item:hover {
+      background: var(--bg-glass);
+    }
+
     /* Main Content */
     .content {
       flex: 1;
@@ -1339,6 +1418,23 @@
         flex-shrink: 0;
       }
 
+      /* Show mobile auth button on mobile */
+      .mobile-auth-btn {
+        display: flex !important;
+      }
+
+      .mobile-auth-btn.hidden {
+        display: none !important;
+      }
+
+      .mobile-user-btn {
+        display: none !important;
+      }
+
+      .mobile-user-btn.show {
+        display: flex !important;
+      }
+
       .content {
         padding: 16px;
         max-width: 100vw;
@@ -1982,6 +2078,35 @@
 
     .modal-actions .btn {
       flex: 1;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: 50%;
+      color: var(--text-secondary);
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .modal-close:hover {
+      background: var(--error-soft);
+      color: var(--error);
+      border-color: var(--error);
     }
 
     /* ============================================
@@ -2795,16 +2920,29 @@
             <p class="page-subtitle" id="page-subtitle">Watch videos and improve your English</p>
           </div>
         </div>
-        <div class="header-stats" id="header-stats">
-          <div class="header-stat">
-            <span class="header-stat-icon">⏱️</span>
-            <span class="header-stat-value" id="session-time">00:00</span>
-            <span class="header-stat-label">SESSION</span>
+        <div class="header-right">
+          <div class="header-stats" id="header-stats">
+            <div class="header-stat">
+              <span class="header-stat-icon">⏱️</span>
+              <span class="header-stat-value" id="session-time">00:00</span>
+              <span class="header-stat-label">SESSION</span>
+            </div>
+            <div class="header-stat">
+              <span class="header-stat-icon">📊</span>
+              <span class="header-stat-value"><span id="today-time">0</span><span class="header-stat-unit">min</span></span>
+              <span class="header-stat-label">TODAY</span>
+            </div>
           </div>
-          <div class="header-stat">
-            <span class="header-stat-icon">📊</span>
-            <span class="header-stat-value"><span id="today-time">0</span><span class="header-stat-unit">min</span></span>
-            <span class="header-stat-label">TODAY</span>
+          <!-- Mobile Auth Button -->
+          <button class="mobile-auth-btn" id="mobile-auth-btn" onclick="showAuthModal('signin')">
+            <span>👤</span>
+          </button>
+          <div class="mobile-user-btn" id="mobile-user-btn" onclick="toggleMobileUserMenu()">
+            <span>👤</span>
+          </div>
+          <div class="mobile-user-menu" id="mobile-user-menu">
+            <div class="mobile-user-email" id="mobile-user-email"></div>
+            <button class="mobile-user-menu-item" onclick="signOut(); closeMobileUserMenu();">Sign Out</button>
           </div>
         </div>
       </div>
@@ -3123,8 +3261,8 @@
   </nav>
 
   <!-- Auth Modal -->
-  <div class="modal-overlay" id="auth-modal">
-    <div class="modal auth-modal">
+  <div class="modal-overlay" id="auth-modal" onclick="hideAuthModal()">
+    <div class="modal auth-modal" onclick="event.stopPropagation()">
       <div class="modal-header">
         <h2 class="modal-title" id="auth-modal-title">Sign In</h2>
         <button class="modal-close" onclick="hideAuthModal()">&times;</button>
@@ -3307,15 +3445,50 @@
       const userInfo = document.getElementById('user-info');
       const userName = document.getElementById('user-name');
 
+      // Mobile auth elements
+      const mobileAuthBtn = document.getElementById('mobile-auth-btn');
+      const mobileUserBtn = document.getElementById('mobile-user-btn');
+      const mobileUserEmail = document.getElementById('mobile-user-email');
+
       if (authUser) {
         authButton.style.display = 'none';
         userInfo.style.display = 'flex';
         userName.textContent = authUser.email || authUser.name || 'User';
+
+        // Mobile UI - show user button, hide auth button
+        mobileAuthBtn.classList.add('hidden');
+        mobileUserBtn.classList.add('show');
+        mobileUserEmail.textContent = authUser.email || authUser.name || 'User';
       } else {
         authButton.style.display = 'flex';
         userInfo.style.display = 'none';
+
+        // Mobile UI - show auth button, hide user button
+        mobileAuthBtn.classList.remove('hidden');
+        mobileUserBtn.classList.remove('show');
+        closeMobileUserMenu();
       }
     }
+
+    function toggleMobileUserMenu(event) {
+      event.stopPropagation();
+      const menu = document.getElementById('mobile-user-menu');
+      menu.classList.toggle('open');
+    }
+
+    function closeMobileUserMenu() {
+      const menu = document.getElementById('mobile-user-menu');
+      menu.classList.remove('open');
+    }
+
+    // Close mobile user menu when clicking outside
+    document.addEventListener('click', (event) => {
+      const menu = document.getElementById('mobile-user-menu');
+      const userBtn = document.getElementById('mobile-user-btn');
+      if (menu && !menu.contains(event.target) && !userBtn.contains(event.target)) {
+        closeMobileUserMenu();
+      }
+    });
 
     function getAuthHeaders() {
       if (authToken) {
@@ -3846,7 +4019,7 @@
       container.innerHTML = `
         <iframe
           id="yt-iframe"
-          src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&rel=0&modestbranding=1"
+          src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playlist=${videoId}"
           frameborder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
@@ -4584,6 +4757,8 @@
     window.hideAuthModal = hideAuthModal;
     window.handleAuthSubmit = handleAuthSubmit;
     window.signOut = signOut;
+    window.toggleMobileUserMenu = toggleMobileUserMenu;
+    window.closeMobileUserMenu = closeMobileUserMenu;
 
     // Navigation and UI functions
     window.closeMobileMenu = closeMobileMenu;
